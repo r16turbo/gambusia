@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<Configuration>
+  <Appenders>
+    <!-- stdout appender -->
+    <Console name="stdout">
+      <PatternLayout pattern="[%d] %-5p - %m%n" />
+    </Console>
+  </Appenders>
+
+  <Loggers>
+    <!-- application logger -->
+    <Logger name="io.gambusia" level="debug" />
+
+    <!-- root logger -->
+    <Root level="info">
+      <AppenderRef ref="stdout" />
+    </Root>
+  </Loggers>
+</Configuration>
