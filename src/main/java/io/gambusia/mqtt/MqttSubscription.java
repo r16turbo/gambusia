@@ -35,4 +35,16 @@ public class MqttSubscription {
   public String getTopicFilter() {
     return topicFilter;
   }
+
+  public static MqttSubscription qos0(String topicFilter) {
+    return new MqttSubscription(MqttQoS.AT_MOST_ONCE, topicFilter);
+  }
+
+  public static MqttSubscription qos1(String topicFilter) {
+    return new MqttSubscription(MqttQoS.AT_LEAST_ONCE, topicFilter);
+  }
+
+  public static MqttSubscription qos2(String topicFilter) {
+    return new MqttSubscription(MqttQoS.EXACTLY_ONCE, topicFilter);
+  }
 }

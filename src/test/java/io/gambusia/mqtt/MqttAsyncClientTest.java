@@ -36,11 +36,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
-import io.gambusia.mqtt.MqttAsyncClient;
-import io.gambusia.mqtt.MqttConnectResult;
-import io.gambusia.mqtt.MqttPublication;
-import io.gambusia.mqtt.MqttPublishFuture;
-import io.gambusia.mqtt.MqttSubscription;
 import io.gambusia.mqtt.handler.MqttClientHandler;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.ByteBuf;
@@ -99,6 +94,7 @@ class MqttAsyncClientTest {
   static void setUpBeforeClass() throws Exception {
     workerGroup = new NioEventLoopGroup();
     subscribeQueue = new ArrayBlockingQueue<>(8);
+    MqttSubscriber subscriber = publication -> subscribeQueue.put(publication);
 
     b = new Bootstrap();
     b.group(workerGroup);
@@ -112,7 +108,7 @@ class MqttAsyncClientTest {
         ChannelPipeline p = ch.pipeline();
         p.addLast("mqttDecoder", new MqttDecoder());
         p.addLast("mqttEncoder", MqttEncoder.INSTANCE);
-        p.addLast("mqttHandler", new MqttClientHandler(TIMEOUT, TIMEUNIT, subscribeQueue));
+        p.addLast("mqttHandler", new MqttClientHandler(subscriber, TIMEOUT, TIMEUNIT));
         p.addLast("loggingHandler", new LoggingHandler());
       }
     });
@@ -144,7 +140,6 @@ class MqttAsyncClientTest {
     assertNotNull(result);
     assertEquals(0, result.getReturnCode());
     assertEquals(false, result.isSessionPresent());
-    assertEquals(subscribeQueue, result.getSubscribeQueue());
   }
 
   @Test

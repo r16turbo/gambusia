@@ -20,15 +20,14 @@ import java.nio.channels.AlreadyConnectedException;
 import java.nio.channels.NotYetConnectedException;
 import java.util.Map;
 import java.util.Queue;
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import io.gambusia.mqtt.MqttArticle;
 import io.gambusia.mqtt.MqttConnectResult;
 import io.gambusia.mqtt.MqttPublication;
+import io.gambusia.mqtt.MqttSubscriber;
 import io.gambusia.mqtt.handler.promise.MqttConnectPromise;
 import io.gambusia.mqtt.handler.promise.MqttPingPromise;
 import io.gambusia.mqtt.handler.promise.MqttPubAckPromise;
@@ -75,7 +74,7 @@ import io.netty.util.concurrent.PromiseNotifier;
 
 public class MqttClientHandler extends ChannelDuplexHandler implements MqttFixedHeaders {
 
-  private final BlockingQueue<MqttPublication> subscribeQueue;
+  private final MqttSubscriber subscriber;
   private final long defaultTimeout;
   private final TimeUnit defaultTimeunit;
   private Timer timer;
@@ -98,36 +97,19 @@ public class MqttClientHandler extends ChannelDuplexHandler implements MqttFixed
   private final Map<Integer, Promise<Void>> receivePromises = new ConcurrentHashMap<>();
   private final Queue<Promise<Void>> pingPromises = new ConcurrentLinkedQueue<>();
 
-  public MqttClientHandler(long defaultTimeout, TimeUnit defaultTimeunit) {
-    this(defaultTimeout, defaultTimeunit, null, null);
+  public MqttClientHandler(MqttSubscriber subscriber,
+      long defaultTimeout, TimeUnit defaultTimeunit) {
+    this(subscriber, defaultTimeout, defaultTimeunit, null);
   }
 
-  public MqttClientHandler(long defaultTimeout, TimeUnit defaultTimeunit,
-      Timer timer) {
-    this(defaultTimeout, defaultTimeunit, null, timer);
-  }
+  public MqttClientHandler(MqttSubscriber subscriber,
+      long defaultTimeout, TimeUnit defaultTimeunit, Timer timer) {
 
-  public MqttClientHandler(long defaultTimeout, TimeUnit defaultTimeunit,
-      BlockingQueue<MqttPublication> subscribeQueue) {
-    this(defaultTimeout, defaultTimeunit, subscribeQueue, null);
-  }
-
-  public MqttClientHandler(long defaultTimeout, TimeUnit defaultTimeunit,
-      BlockingQueue<MqttPublication> subscribeQueue, Timer timer) {
-
+    this.subscriber = checkNotNull(subscriber, "subscriber");
     this.defaultTimeout = checkPositive(defaultTimeout, "defaultTimeout");
     this.defaultTimeunit = checkNotNull(defaultTimeunit, "defaultTimeunit");
 
-    if (subscribeQueue == null) {
-      this.subscribeQueue = new LinkedBlockingQueue<>();
-    } else {
-      this.subscribeQueue = subscribeQueue;
-    }
     this.timer = timer;
-  }
-
-  public BlockingQueue<MqttPublication> getSubscribeQueue() {
-    return subscribeQueue;
   }
 
   public long getDefaultTimeout() {
@@ -269,7 +251,7 @@ public class MqttClientHandler extends ChannelDuplexHandler implements MqttFixed
       final MqttConnectReturnCode returnCode = variableHeader.connectReturnCode();
       if (returnCode == MqttConnectReturnCode.CONNECTION_ACCEPTED) {
         connectPromise.trySuccess(new MqttConnectResult(
-            variableHeader.isSessionPresent(), returnCode.byteValue(), subscribeQueue));
+            variableHeader.isSessionPresent(), returnCode.byteValue()));
         startKeepAlive(ctx, connectPromise.getPingInterval(), connectPromise.getPingTimeunit());
       } else {
         connectPromise.tryFailure(new MqttConnectionRefusedException(returnCode.byteValue()));
@@ -428,7 +410,7 @@ public class MqttClientHandler extends ChannelDuplexHandler implements MqttFixed
   public void publishRead(ChannelHandlerContext ctx, MqttPublishMessage msg) throws Exception {
     final MqttFixedHeader fixedHeader = msg.fixedHeader();
     final MqttPublishVariableHeader variableHeader = msg.variableHeader();
-    subscribeQueue.put(new MqttPublication(ctx.channel(),
+    subscriber.publicationAlived(new MqttPublication(ctx.channel(),
         fixedHeader.isDup(), fixedHeader.qosLevel(), fixedHeader.isRetain(),
         variableHeader.topicName(), variableHeader.packetId(),
         msg.payload()));

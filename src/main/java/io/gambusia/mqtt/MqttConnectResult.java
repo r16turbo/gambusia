@@ -15,20 +15,14 @@
  */
 package io.gambusia.mqtt;
 
-import static io.gambusia.netty.util.Args.*;
-import java.util.concurrent.BlockingQueue;
-
 public class MqttConnectResult {
 
   private final boolean sessionPresent;
   private final short returnCode;
-  private final BlockingQueue<MqttPublication> subscribeQueue;
 
-  public MqttConnectResult(boolean sessionPresent, short returnCode,
-      BlockingQueue<MqttPublication> subscribeQueue) {
+  public MqttConnectResult(boolean sessionPresent, short returnCode) {
     this.sessionPresent = sessionPresent;
     this.returnCode = returnCode;
-    this.subscribeQueue = checkNotNull(subscribeQueue, "subscribeQueue");
   }
 
   public boolean isSessionPresent() {
@@ -37,9 +31,5 @@ public class MqttConnectResult {
 
   public short getReturnCode() {
     return returnCode;
-  }
-
-  public BlockingQueue<MqttPublication> getSubscribeQueue() {
-    return subscribeQueue;
   }
 }
