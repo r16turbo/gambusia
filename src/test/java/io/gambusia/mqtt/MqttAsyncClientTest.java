@@ -81,9 +81,9 @@ class MqttAsyncClientTest {
 
   private final AtomicInteger count = new AtomicInteger();
   private final MqttSubscription[] subscriptions = new MqttSubscription[] {
-      new MqttSubscription(MqttQoS.EXACTLY_ONCE, TOPIC0),
-      new MqttSubscription(MqttQoS.EXACTLY_ONCE, TOPIC1),
-      new MqttSubscription(MqttQoS.EXACTLY_ONCE, TOPIC2),
+      MqttSubscription.qos2(TOPIC0),
+      MqttSubscription.qos2(TOPIC1),
+      MqttSubscription.qos2(TOPIC2),
   };
   private final String[] topicFilters = Arrays.stream(subscriptions)
       .map(s -> s.getTopicFilter()).toArray(String[]::new);
