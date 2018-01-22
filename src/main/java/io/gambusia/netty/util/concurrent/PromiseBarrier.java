@@ -25,7 +25,7 @@ import io.netty.util.concurrent.GenericFutureListener;
 import io.netty.util.concurrent.Promise;
 import io.netty.util.internal.logging.InternalLogger;
 
-public class PromiseBarrier<V, F extends Future<V>> implements GenericFutureListener<F> {
+public class PromiseBarrier<V> implements GenericFutureListener<Future<V>> {
 
   private static final InternalLogger logger = getInstance(PromiseBarrier.class);
 
@@ -44,11 +44,11 @@ public class PromiseBarrier<V, F extends Future<V>> implements GenericFutureList
     this.result = result;
   }
 
-  public GenericFutureListener<F> add() {
+  public GenericFutureListener<Future<V>> add() {
     return add(1);
   }
 
-  public GenericFutureListener<F> add(int delta) {
+  public GenericFutureListener<Future<V>> add(int delta) {
     count.addAndGet(delta);
     return this;
   }
@@ -58,7 +58,7 @@ public class PromiseBarrier<V, F extends Future<V>> implements GenericFutureList
   }
 
   @Override
-  public void operationComplete(F future) throws Exception {
+  public void operationComplete(Future<V> future) throws Exception {
     if (future.isSuccess()) {
       // noop
     } else if (future.isCancelled()) {
