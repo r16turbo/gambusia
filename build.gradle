@@ -14,6 +14,8 @@ apply plugin: 'maven'
 group = 'io.gambusia'
 version = '0.2.1-SNAPSHOT'
 
+description = 'Netty-based MQTT v3.1.1 lightweight client'
+
 tasks.withType(JavaCompile) {
     sourceCompatibility = 1.8
     targetCompatibility = 1.8
@@ -61,13 +63,57 @@ task sourcesJar(type: Jar, dependsOn: classes) {
     from sourceSets.main.allSource
 }
 
-task javadocJar(type: Jar, dependsOn: javadoc) {
-    classifier = 'javadoc'
-    from javadoc.destinationDir
-}
-
 artifacts {
     archives sourcesJar
-    //archives javadocJar
 }
 
+install {
+    repositories.mavenInstaller {
+        customizePom(pom, project)
+    }
+}
+
+uploadArchives {
+    repositories.mavenDeployer {
+        customizePom(pom, project)
+        repository(url: "file:$rootDir/../maven")
+    }
+}
+
+def customizePom(pom, gradleProject) {
+    pom.whenConfigured { generatedPom ->
+        // eliminate test-scoped dependencies
+        generatedPom.dependencies.removeAll { dep ->
+            dep.scope == "test"
+        }
+
+        // add all items necessary for maven central publication
+        generatedPom.project {
+            name = gradleProject.name
+            description = gradleProject.description
+            url = "https://github.com/r16turbo/gambusia"
+            licenses {
+                license {
+                    name "Apache License, Version 2.0"
+                    url "http://www.apache.org/licenses/LICENSE-2.0"
+                    distribution "repo"
+                }
+            }
+            scm {
+                url = "https://github.com/r16turbo/gambusia"
+                connection = "scm:git:git://github.com/r16turbo/gambusia"
+                developerConnection = "scm:git:git://github.com/r16turbo/gambusia"
+            }
+            developers {
+                developer {
+                    id = "r16turbo"
+                    name = "Issey Yamakoshi"
+                }
+            }
+            issueManagement {
+                system = "GitHub Issues"
+                url = "https://github.com/r16turbo/gambusia/issues"
+            }
+        }
+    }
+}
