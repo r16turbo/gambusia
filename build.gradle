@@ -3,7 +3,7 @@
  *
  * This generated file contains a sample Java Library project to get you started.
  * For more details take a look at the Java Libraries chapter in the Gradle
- * user guide available at https://docs.gradle.org/4.1/userguide/java_library_plugin.html
+ * user guide available at https://docs.gradle.org/4.4.1/userguide/java_library_plugin.html
  */
 
 // Apply the java-library plugin to add support for Java Library
@@ -15,6 +15,8 @@ group = 'io.gambusia'
 version = '0.2.1-SNAPSHOT'
 
 tasks.withType(JavaCompile) {
+    sourceCompatibility = 1.8
+    targetCompatibility = 1.8
     options.encoding = 'UTF-8'
 }
 
