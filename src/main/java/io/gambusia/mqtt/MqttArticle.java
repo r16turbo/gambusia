@@ -42,7 +42,7 @@ public class MqttArticle implements ByteBufHolder {
     this.qos = checkNotNull(qos, "qos");
     this.retain = retain;
     this.topic = checkNotEmpty(topic, "topic");
-    this.payload = checkNotNull(payload, "payload").markReaderIndex().markWriterIndex();
+    this.payload = checkNotNull(payload, "payload");
   }
 
   public MqttQoS getQoS() {
