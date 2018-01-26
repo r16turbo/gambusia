@@ -306,7 +306,7 @@ public class MqttClientHandler extends ChannelDuplexHandler implements MqttFixed
           channel.addListener(new PromiseNotifier<Void, ChannelFuture>(promise));
         } else {
           // QoS 1,2
-          payload = article.getPayload().retainedDuplicate();
+          payload = article.getPayload().retain();
           promise = embedTimeLimit(msg);
           promise.addListener(f -> publishPromises.remove(packetId, promise));
           // channel(cancel, failure) -> promise
