@@ -277,7 +277,7 @@ class MqttAsyncClientTest {
   void test099() throws InterruptedException {
     client.disconnect().addListener(f -> assertTrue(f.isSuccess())).sync();
 
-    client.closeFuture().sync();
+    client.channel().closeFuture().sync();
   }
 
   @Test

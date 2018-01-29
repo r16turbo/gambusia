@@ -29,7 +29,6 @@ import io.gambusia.mqtt.handler.promise.MqttUnsubscribePromise;
 import io.gambusia.netty.util.concurrent.PromiseCanceller;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
-import io.netty.channel.ChannelFuture;
 import io.netty.handler.codec.mqtt.MqttMessage;
 import io.netty.handler.codec.mqtt.MqttMessageIdVariableHeader;
 import io.netty.handler.codec.mqtt.MqttQoS;
@@ -38,9 +37,18 @@ import io.netty.util.concurrent.Promise;
 
 public class MqttAsyncClient {
 
-  private final Channel ch;
+  private Channel ch;
 
   public MqttAsyncClient(Channel ch) {
+    this.ch = checkNotNull(ch, "ch");
+  }
+
+  // channel
+  public Channel channel() {
+    return ch;
+  }
+
+  public void channel(Channel ch) {
     this.ch = checkNotNull(ch, "ch");
   }
 
@@ -298,11 +306,6 @@ public class MqttAsyncClient {
   // disconnect
   public Future<Void> disconnect() {
     return ch.writeAndFlush(new MqttMessage(MqttFixedHeaders.DISCONNECT_HEADER));
-  }
-
-  // support
-  public ChannelFuture closeFuture() {
-    return ch.closeFuture();
   }
 
   protected <P extends Promise<V>, V> P writeAndFlush(P promise) {
