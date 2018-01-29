@@ -230,6 +230,10 @@ public class MqttAsyncClient {
     return writeAndFlush(new MqttPublishPromise(ch, future));
   }
 
+  public MqttPublishFuture publish(MqttPublishFuture future, long timeout, TimeUnit unit) {
+    return writeAndFlush(new MqttPublishPromise(ch, timeout, unit, future));
+  }
+
   // subscribe
   public Future<MqttQoS[]> subscribe(MqttSubscription... subscriptions) {
     return writeAndFlush(new MqttSubscribePromise(ch.eventLoop(), subscriptions));
