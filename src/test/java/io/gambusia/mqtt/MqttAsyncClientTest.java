@@ -139,7 +139,7 @@ class MqttAsyncClientTest {
     MqttConnectResult result = client.connect(true, 2, 1, TimeUnit.SECONDS, "test").get();
     assertNotNull(result);
     assertEquals(0, result.getReturnCode());
-    assertEquals(false, result.isSessionPresent());
+    assertFalse(result.isSessionPresent());
   }
 
   @Test
@@ -162,7 +162,7 @@ class MqttAsyncClientTest {
   @Test
   @DisplayName("ping -> pong")
   void test011() throws InterruptedException {
-    client.ping().addListener(f -> assertEquals(f.isSuccess(), true)).sync();
+    client.ping().addListener(f -> assertTrue(f.isSuccess())).sync();
   }
 
   @Test
@@ -185,7 +185,7 @@ class MqttAsyncClientTest {
     MqttPublishFuture future = client.publish0(false, TOPIC0, payload);
     assertNull(future.get());
     if (future.isReleasePending()) {
-      future.release().addListener(f -> assertEquals(f.isSuccess(), true)).sync();
+      future.release().addListener(f -> assertTrue(f.isSuccess())).sync();
     }
     assertTimeout(Duration.ofSeconds(1), () -> received(subscribeQueue.take()));
   }
@@ -196,7 +196,7 @@ class MqttAsyncClientTest {
     MqttPublishFuture future = client.publish1(false, TOPIC1, payload);
     assertNull(future.get());
     if (future.isReleasePending()) {
-      future.release().addListener(f -> assertEquals(f.isSuccess(), true)).sync();
+      future.release().addListener(f -> assertTrue(f.isSuccess())).sync();
     }
     assertTimeout(Duration.ofSeconds(1), () -> received(subscribeQueue.take()));
   }
@@ -207,7 +207,7 @@ class MqttAsyncClientTest {
     MqttPublishFuture future = client.publish2(false, TOPIC2, payload);
     assertNull(future.get());
     if (future.isReleasePending()) {
-      future.release().addListener(f -> assertEquals(f.isSuccess(), true)).sync();
+      future.release().addListener(f -> assertTrue(f.isSuccess())).sync();
     }
     assertTimeout(Duration.ofSeconds(1), () -> received(subscribeQueue.take()));
   }
@@ -224,7 +224,7 @@ class MqttAsyncClientTest {
     assertNull(future.get());
     assertEquals(failure.getPacketId(), future.getPacketId());
     if (future.isReleasePending()) {
-      future.release().addListener(f -> assertEquals(f.isSuccess(), true)).sync();
+      future.release().addListener(f -> assertTrue(f.isSuccess())).sync();
     }
     assertTimeout(Duration.ofSeconds(1), () -> received(subscribeQueue.take()));
   }
@@ -239,7 +239,7 @@ class MqttAsyncClientTest {
     assertNull(future.get());
     assertEquals(failure.getPacketId(), future.getPacketId());
     if (future.isReleasePending()) {
-      future.release().addListener(f -> assertEquals(f.isSuccess(), true)).sync();
+      future.release().addListener(f -> assertTrue(f.isSuccess())).sync();
     }
     assertTimeout(Duration.ofSeconds(1), () -> received(subscribeQueue.take()));
   }
@@ -247,7 +247,7 @@ class MqttAsyncClientTest {
   @Test
   @DisplayName("unsubscribe")
   void test080() throws InterruptedException {
-    client.unsubscribe(topicFilters).addListener(f -> assertEquals(f.isSuccess(), true)).sync();
+    client.unsubscribe(topicFilters).addListener(f -> assertTrue(f.isSuccess())).sync();
   }
 
   @ParameterizedTest(name = "publish timeout={0}ms, qos={1}")
@@ -263,7 +263,7 @@ class MqttAsyncClientTest {
       MqttPublishFuture future = client.publish(qos, false, topic, payload);
       assertNull(future.get());
       if (future.isReleasePending()) {
-        future.release().addListener(f -> assertEquals(f.isSuccess(), true)).sync();
+        future.release().addListener(f -> assertTrue(f.isSuccess())).sync();
       }
     }
     logger.info("publish: {}tps", () -> {
@@ -275,7 +275,7 @@ class MqttAsyncClientTest {
   @Test
   @DisplayName("disconnect")
   void test099() throws InterruptedException {
-    client.disconnect().addListener(f -> assertEquals(f.isSuccess(), true)).sync();
+    client.disconnect().addListener(f -> assertTrue(f.isSuccess())).sync();
 
     client.closeFuture().sync();
   }
@@ -297,7 +297,7 @@ class MqttAsyncClientTest {
           msg.getPayload().toString(StandardCharsets.UTF_8));
 
       if (msg.isCommitPending()) {
-        msg.commit().addListener(f -> assertEquals(f.isSuccess(), true)).sync();
+        msg.commit().addListener(f -> assertTrue(f.isSuccess())).sync();
       }
     }
   }
