@@ -285,7 +285,12 @@ class MqttAsyncClientTest {
   void test999() throws InterruptedException {
     MqttPublication publication;
     while ((publication = subscribeQueue.poll()) != null) {
-      publication.release();
+      try (MqttPublication msg = publication) {
+        logger.warn("unread: dup={}, qos={}, retain={}, packetId={}, topic={}, payload={}",
+            msg.isDuplicate(), msg.getQoS(), msg.isRetain(),
+            msg.getPacketId(), msg.getTopic(),
+            msg.getPayload().toString(StandardCharsets.UTF_8));
+      }
     }
   }
 
