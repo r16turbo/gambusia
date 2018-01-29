@@ -21,6 +21,8 @@ import java.util.concurrent.TimeUnit;
 import io.gambusia.mqtt.handler.MqttFixedHeaders;
 import io.gambusia.mqtt.handler.promise.MqttConnectPromise;
 import io.gambusia.mqtt.handler.promise.MqttPingPromise;
+import io.gambusia.mqtt.handler.promise.MqttPubRecPromise;
+import io.gambusia.mqtt.handler.promise.MqttPubRelPromise;
 import io.gambusia.mqtt.handler.promise.MqttPublishPromise;
 import io.gambusia.mqtt.handler.promise.MqttSubscribePromise;
 import io.gambusia.mqtt.handler.promise.MqttUnsubscribePromise;
@@ -29,6 +31,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.handler.codec.mqtt.MqttMessage;
+import io.netty.handler.codec.mqtt.MqttMessageIdVariableHeader;
 import io.netty.handler.codec.mqtt.MqttQoS;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.Promise;
@@ -218,20 +221,50 @@ public class MqttAsyncClient {
 
   // publish base
   public MqttPublishFuture publish(MqttArticle article) {
-    return writeAndFlush(new MqttPublishPromise(ch, article));
+    return writeAndFlush(new MqttPublishPromise(ch.eventLoop(), article));
   }
 
   public MqttPublishFuture publish(MqttArticle article, long timeout, TimeUnit unit) {
-    return writeAndFlush(new MqttPublishPromise(ch, timeout, unit, article));
+    return writeAndFlush(new MqttPublishPromise(ch.eventLoop(), timeout, unit, article));
   }
 
   // publish retry
   public MqttPublishFuture publish(MqttPublishFuture future) {
-    return writeAndFlush(new MqttPublishPromise(ch, future));
+    return writeAndFlush(new MqttPublishPromise(ch.eventLoop(), future));
   }
 
   public MqttPublishFuture publish(MqttPublishFuture future, long timeout, TimeUnit unit) {
-    return writeAndFlush(new MqttPublishPromise(ch, timeout, unit, future));
+    return writeAndFlush(new MqttPublishPromise(ch.eventLoop(), timeout, unit, future));
+  }
+
+  // publish release
+  public Future<Void> release(int packetId) {
+    return writeAndFlush(new MqttPubRelPromise(ch.eventLoop(), packetId));
+  }
+
+  public Future<Void> release(int packetId, long timeout, TimeUnit unit) {
+    return writeAndFlush(new MqttPubRelPromise(ch.eventLoop(), timeout, unit, packetId));
+  }
+
+  // publish ack
+  public Future<Void> ack(int packetId) {
+    return ch.writeAndFlush(new MqttMessage(
+        MqttFixedHeaders.PUBACK_HEADER, MqttMessageIdVariableHeader.from(packetId)));
+  }
+
+  // publish received
+  public Future<Void> received(int packetId) {
+    return writeAndFlush(new MqttPubRecPromise(ch.eventLoop(), packetId));
+  }
+
+  public Future<Void> received(int packetId, long timeout, TimeUnit unit) {
+    return writeAndFlush(new MqttPubRecPromise(ch.eventLoop(), timeout, unit, packetId));
+  }
+
+  // publish complete
+  public Future<Void> complete(int packetId) {
+    return ch.writeAndFlush(new MqttMessage(
+        MqttFixedHeaders.PUBCOMP_HEADER, MqttMessageIdVariableHeader.from(packetId)));
   }
 
   // subscribe

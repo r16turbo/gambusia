@@ -20,41 +20,40 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import io.gambusia.mqtt.MqttArticle;
 import io.gambusia.mqtt.MqttPublishFuture;
-import io.netty.channel.Channel;
 import io.netty.handler.codec.mqtt.MqttQoS;
 import io.netty.util.Timeout;
-import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.EventExecutor;
 
 public class MqttPublishPromise extends MqttTimeLimitPromise<Void> implements MqttPublishFuture {
 
-  private final Channel ch;
   private final MqttArticle article;
   private final boolean duplicate;
 
   private int packetId;
 
-  public MqttPublishPromise(Channel ch, MqttArticle article) {
-    this(ch, 0, null, article, 0);
+  public MqttPublishPromise(EventExecutor executor, MqttArticle article) {
+    this(executor, 0, null, article, 0);
   }
 
-  public MqttPublishPromise(Channel ch, long timeout, TimeUnit timeunit,
+  public MqttPublishPromise(EventExecutor executor, long timeout, TimeUnit timeunit,
       MqttArticle article) {
-    this(ch, timeout, timeunit, article, 0);
+    this(executor, timeout, timeunit, article, 0);
   }
 
-  public MqttPublishPromise(Channel ch, MqttPublishFuture future) {
-    this(ch, 0, null, checkNotNull(future, "future").getArticle(), future.getPacketId());
+  public MqttPublishPromise(EventExecutor executor, MqttPublishFuture future) {
+    this(executor, 0, null,
+        checkNotNull(future, "future").getArticle(), future.getPacketId());
   }
 
-  public MqttPublishPromise(Channel ch, long timeout, TimeUnit timeunit,
+  public MqttPublishPromise(EventExecutor executor, long timeout, TimeUnit timeunit,
       MqttPublishFuture future) {
-    this(ch, timeout, timeunit, checkNotNull(future, "future").getArticle(), future.getPacketId());
+    this(executor, timeout, timeunit,
+        checkNotNull(future, "future").getArticle(), future.getPacketId());
   }
 
-  protected MqttPublishPromise(Channel ch, long timeout, TimeUnit timeunit,
+  protected MqttPublishPromise(EventExecutor executor, long timeout, TimeUnit timeunit,
       MqttArticle article, int packetId) {
-    super(ch.eventLoop(), timeout, timeunit);
-    this.ch = checkNotNull(ch, "ch");
+    super(executor, timeout, timeunit);
     this.article = checkNotNull(article, "article");
     this.duplicate = packetId > 0;
     this.packetId = packetId;
@@ -81,24 +80,7 @@ public class MqttPublishPromise extends MqttTimeLimitPromise<Void> implements Mq
 
   @Override
   public boolean isReleasePending() {
-    return article.getQoS() == MqttQoS.EXACTLY_ONCE;
-  }
-
-  @Override
-  public Future<Void> release() {
-    return release(0, null);
-  }
-
-  @Override
-  public Future<Void> release(long timeout, TimeUnit timeunit) {
-    final Future<Void> future;
-    if (isReleasePending()) {
-      future = new MqttPubRelPromise(ch.eventLoop(), timeout, timeunit, packetId);
-      ch.writeAndFlush(future);
-    } else {
-      future = ch.newSucceededFuture();
-    }
-    return future;
+    return (!isDone() || isSuccess()) && article.getQoS() == MqttQoS.EXACTLY_ONCE;
   }
 
   @Override

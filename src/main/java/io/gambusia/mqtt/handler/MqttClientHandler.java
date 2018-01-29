@@ -30,7 +30,6 @@ import io.gambusia.mqtt.MqttPublication;
 import io.gambusia.mqtt.MqttSubscriber;
 import io.gambusia.mqtt.handler.promise.MqttConnectPromise;
 import io.gambusia.mqtt.handler.promise.MqttPingPromise;
-import io.gambusia.mqtt.handler.promise.MqttPubAckPromise;
 import io.gambusia.mqtt.handler.promise.MqttPubRecPromise;
 import io.gambusia.mqtt.handler.promise.MqttPubRelPromise;
 import io.gambusia.mqtt.handler.promise.MqttPublishPromise;
@@ -146,8 +145,6 @@ public class MqttClientHandler extends ChannelDuplexHandler implements MqttFixed
       write(ctx, (MqttConnectPromise) msg, promise);
     } else if (msg instanceof MqttPublishPromise) {
       write(ctx, (MqttPublishPromise) msg, promise);
-    } else if (msg instanceof MqttPubAckPromise) {
-      write(ctx, (MqttPubAckPromise) msg, promise);
     } else if (msg instanceof MqttPubRecPromise) {
       write(ctx, (MqttPubRecPromise) msg, promise);
     } else if (msg instanceof MqttPubRelPromise) {
@@ -410,31 +407,10 @@ public class MqttClientHandler extends ChannelDuplexHandler implements MqttFixed
   public void publishRead(ChannelHandlerContext ctx, MqttPublishMessage msg) throws Exception {
     final MqttFixedHeader fixedHeader = msg.fixedHeader();
     final MqttPublishVariableHeader variableHeader = msg.variableHeader();
-    subscriber.publicationAlived(new MqttPublication(ctx.channel(),
+    subscriber.publicationAlived(new MqttPublication(
         fixedHeader.isDup(), fixedHeader.qosLevel(), fixedHeader.isRetain(),
         variableHeader.topicName(), variableHeader.packetId(),
         msg.payload()));
-  }
-
-  public void write(ChannelHandlerContext ctx, MqttPubAckPromise msg, ChannelPromise channel)
-      throws Exception {
-
-    if (!isConnected()) {
-      msg.setFailure(new NotYetConnectedException());
-    } else {
-      final int packetId = msg.getPacketId();
-      if (receivePromises.containsKey(packetId)) {
-        msg.setFailure(new MqttDuplicateIdException(MqttMessageType.PUBACK, packetId));
-      } else {
-        final Promise<Void> promise = msg;
-        final MqttMessage message;
-        // channel(notify) -> promise
-        channel.addListener(new PromiseNotifier<Void, ChannelFuture>(promise));
-        // create mqtt message
-        message = new MqttMessage(PUBACK_HEADER, MqttMessageIdVariableHeader.from(packetId));
-        writeAndTouch(ctx, message, channel);
-      }
-    }
   }
 
   public void write(ChannelHandlerContext ctx, MqttPubRecPromise msg, ChannelPromise channel)
@@ -468,11 +444,7 @@ public class MqttClientHandler extends ChannelDuplexHandler implements MqttFixed
       if (promise == null) {
         ctx.fireExceptionCaught(new MqttUnknownIdException(MqttMessageType.PUBREL, packetId));
       } else {
-        final MqttMessage message;
-        // create mqtt message
-        message = new MqttMessage(PUBCOMP_HEADER, MqttMessageIdVariableHeader.from(packetId));
-        // channel(notify) -> promise
-        ctx.writeAndFlush(message).addListener(new PromiseNotifier<Void, ChannelFuture>(promise));
+        promise.trySuccess(null);
       }
     }
   }

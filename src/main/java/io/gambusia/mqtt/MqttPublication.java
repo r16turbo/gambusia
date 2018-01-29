@@ -16,18 +16,13 @@
 package io.gambusia.mqtt;
 
 import static io.gambusia.netty.util.Args.*;
-import io.gambusia.mqtt.handler.promise.MqttPubAckPromise;
-import io.gambusia.mqtt.handler.promise.MqttPubRecPromise;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufHolder;
-import io.netty.channel.Channel;
 import io.netty.handler.codec.mqtt.MqttQoS;
 import io.netty.util.IllegalReferenceCountException;
-import io.netty.util.concurrent.Future;
 
 public class MqttPublication implements ByteBufHolder, AutoCloseable {
 
-  private final Channel ch;
   private final boolean duplicate;
   private final MqttQoS qos;
   private final boolean retain;
@@ -35,10 +30,9 @@ public class MqttPublication implements ByteBufHolder, AutoCloseable {
   private final int packetId;
   private final ByteBuf payload;
 
-  public MqttPublication(Channel ch, boolean duplicate, MqttQoS qos, boolean retain,
+  public MqttPublication(boolean duplicate, MqttQoS qos, boolean retain,
       String topic, int packetId, ByteBuf payload) {
 
-    this.ch = checkNotNull(ch, "ch");
     this.duplicate = duplicate;
     this.qos = qos;
     this.retain = retain;
@@ -69,26 +63,6 @@ public class MqttPublication implements ByteBufHolder, AutoCloseable {
 
   public ByteBuf getPayload() {
     return content();
-  }
-
-  public boolean isCommitPending() {
-    return qos == MqttQoS.AT_LEAST_ONCE || qos == MqttQoS.EXACTLY_ONCE;
-  }
-
-  public Future<Void> commit() {
-    Future<Void> msg;
-    switch (qos) {
-      case AT_LEAST_ONCE:
-        msg = new MqttPubAckPromise(ch.eventLoop(), packetId);
-        ch.writeAndFlush(msg);
-        return msg;
-      case EXACTLY_ONCE:
-        msg = new MqttPubRecPromise(ch.eventLoop(), packetId);
-        ch.writeAndFlush(msg);
-        return msg;
-      default:
-        return ch.newSucceededFuture();
-    }
   }
 
   @Override
@@ -132,7 +106,7 @@ public class MqttPublication implements ByteBufHolder, AutoCloseable {
 
   @Override
   public MqttPublication replace(ByteBuf content) {
-    return new MqttPublication(ch, duplicate, qos, retain, topic, packetId, content);
+    return new MqttPublication(duplicate, qos, retain, topic, packetId, content);
   }
 
   @Override

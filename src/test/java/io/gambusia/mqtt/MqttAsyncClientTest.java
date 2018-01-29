@@ -185,7 +185,7 @@ class MqttAsyncClientTest {
     MqttPublishFuture future = client.publish0(false, TOPIC0, payload);
     assertNull(future.get());
     if (future.isReleasePending()) {
-      future.release().addListener(f -> assertTrue(f.isSuccess())).sync();
+      client.release(future.getPacketId()).addListener(f -> assertTrue(f.isSuccess())).sync();
     }
     assertTimeout(Duration.ofSeconds(1), () -> received(subscribeQueue.take()));
   }
@@ -196,7 +196,7 @@ class MqttAsyncClientTest {
     MqttPublishFuture future = client.publish1(false, TOPIC1, payload);
     assertNull(future.get());
     if (future.isReleasePending()) {
-      future.release().addListener(f -> assertTrue(f.isSuccess())).sync();
+      client.release(future.getPacketId()).addListener(f -> assertTrue(f.isSuccess())).sync();
     }
     assertTimeout(Duration.ofSeconds(1), () -> received(subscribeQueue.take()));
   }
@@ -207,7 +207,7 @@ class MqttAsyncClientTest {
     MqttPublishFuture future = client.publish2(false, TOPIC2, payload);
     assertNull(future.get());
     if (future.isReleasePending()) {
-      future.release().addListener(f -> assertTrue(f.isSuccess())).sync();
+      client.release(future.getPacketId()).addListener(f -> assertTrue(f.isSuccess())).sync();
     }
     assertTimeout(Duration.ofSeconds(1), () -> received(subscribeQueue.take()));
   }
@@ -224,7 +224,7 @@ class MqttAsyncClientTest {
     assertNull(future.get());
     assertEquals(failure.getPacketId(), future.getPacketId());
     if (future.isReleasePending()) {
-      future.release().addListener(f -> assertTrue(f.isSuccess())).sync();
+      client.release(future.getPacketId()).addListener(f -> assertTrue(f.isSuccess())).sync();
     }
     assertTimeout(Duration.ofSeconds(1), () -> received(subscribeQueue.take()));
   }
@@ -239,7 +239,7 @@ class MqttAsyncClientTest {
     assertNull(future.get());
     assertEquals(failure.getPacketId(), future.getPacketId());
     if (future.isReleasePending()) {
-      future.release().addListener(f -> assertTrue(f.isSuccess())).sync();
+      client.release(future.getPacketId()).addListener(f -> assertTrue(f.isSuccess())).sync();
     }
     assertTimeout(Duration.ofSeconds(1), () -> received(subscribeQueue.take()));
   }
@@ -263,7 +263,7 @@ class MqttAsyncClientTest {
       MqttPublishFuture future = client.publish(qos, false, topic, payload);
       assertNull(future.get());
       if (future.isReleasePending()) {
-        future.release().addListener(f -> assertTrue(f.isSuccess())).sync();
+        client.release(future.getPacketId()).addListener(f -> assertTrue(f.isSuccess())).sync();
       }
     }
     logger.info("publish: {}tps", () -> {
@@ -296,8 +296,15 @@ class MqttAsyncClientTest {
           msg.getPacketId(), msg.getTopic(),
           msg.getPayload().toString(StandardCharsets.UTF_8));
 
-      if (msg.isCommitPending()) {
-        msg.commit().addListener(f -> assertTrue(f.isSuccess())).sync();
+      switch (msg.getQoS()) {
+        case AT_LEAST_ONCE:
+          client.ack(msg.getPacketId()).addListener(f -> assertTrue(f.isSuccess())).sync();
+          break;
+        case EXACTLY_ONCE:
+          client.received(msg.getPacketId()).addListener(f -> assertTrue(f.isSuccess())).sync();
+          client.complete(msg.getPacketId()).addListener(f -> assertTrue(f.isSuccess())).sync();
+          break;
+        default:
       }
     }
   }

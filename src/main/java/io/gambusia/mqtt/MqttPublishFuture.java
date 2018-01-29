@@ -15,7 +15,6 @@
  */
 package io.gambusia.mqtt;
 
-import java.util.concurrent.TimeUnit;
 import io.netty.util.concurrent.Future;
 
 public interface MqttPublishFuture extends Future<Void> {
@@ -27,8 +26,4 @@ public interface MqttPublishFuture extends Future<Void> {
   int getPacketId();
 
   boolean isReleasePending();
-
-  Future<Void> release();
-
-  Future<Void> release(long timeout, TimeUnit timeunit);
 }
