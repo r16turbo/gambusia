@@ -111,14 +111,6 @@ public class MqttClientHandler extends ChannelDuplexHandler implements MqttFixed
     this.timer = timer;
   }
 
-  public long getDefaultTimeout() {
-    return defaultTimeout;
-  }
-
-  public TimeUnit getDefaultTimeunit() {
-    return defaultTimeunit;
-  }
-
   public boolean isConnected() {
     return connectPromise != null && connectPromise.isSuccess();
   }
