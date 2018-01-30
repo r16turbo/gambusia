@@ -17,12 +17,15 @@ package io.gambusia.mqtt.handler;
 
 import static io.gambusia.netty.util.Args.*;
 import java.nio.channels.AlreadyConnectedException;
+import java.nio.channels.ClosedChannelException;
 import java.nio.channels.NotYetConnectedException;
 import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import io.gambusia.mqtt.MqttArticle;
 import io.gambusia.mqtt.MqttConnectResult;
@@ -91,9 +94,9 @@ public class MqttClientHandler extends ChannelDuplexHandler implements MqttFixed
   private MqttConnectPromise connectPromise = null;
   private final Map<Integer, MqttPublishPromise> publishPromises = new ConcurrentHashMap<>();
   private final Map<Integer, Promise<Void>> releasePromises = new ConcurrentHashMap<>();
+  private final Map<Integer, Promise<Void>> receivePromises = new ConcurrentHashMap<>();
   private final Map<Integer, Promise<MqttQoS[]>> subscribePromises = new ConcurrentHashMap<>();
   private final Map<Integer, Promise<Void>> unsubscribePromises = new ConcurrentHashMap<>();
-  private final Map<Integer, Promise<Void>> receivePromises = new ConcurrentHashMap<>();
   private final Queue<Promise<Void>> pingPromises = new ConcurrentLinkedQueue<>();
 
   public MqttClientHandler(MqttSubscriber subscriber,
@@ -126,6 +129,16 @@ public class MqttClientHandler extends ChannelDuplexHandler implements MqttFixed
   @Override
   public void channelInactive(ChannelHandlerContext ctx) throws Exception {
     stopKeepAlive();
+    { // mark a promises as failure.
+      PromiseBreaker breaker = new PromiseBreaker(new ClosedChannelException());
+      breaker.accept(connectPromise);
+      publishPromises.forEach(breaker);
+      releasePromises.forEach(breaker);
+      receivePromises.forEach(breaker);
+      subscribePromises.forEach(breaker);
+      unsubscribePromises.forEach(breaker);
+      pingPromises.forEach(breaker);
+    }
     ctx.fireChannelInactive();
   }
 
@@ -606,6 +619,30 @@ public class MqttClientHandler extends ChannelDuplexHandler implements MqttFixed
           }
         });
         ctx.channel().writeAndFlush(ping).addListener(new PromiseCanceller<>(ping, true));
+      }
+    }
+  }
+
+  private class PromiseBreaker implements
+      Consumer<Promise<?>>, BiConsumer<Integer, Promise<?>> {
+
+    private final Throwable cause;
+
+    public PromiseBreaker(Throwable cause) {
+      this.cause = cause;
+    }
+
+    @Override
+    public void accept(Promise<?> p) {
+      if (p != null && !p.isDone()) {
+        p.tryFailure(cause);
+      }
+    }
+
+    @Override
+    public void accept(Integer i, Promise<?> p) {
+      if (p != null && !p.isDone()) {
+        p.tryFailure(cause);
       }
     }
   }
