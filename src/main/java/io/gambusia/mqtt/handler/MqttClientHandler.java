@@ -412,7 +412,7 @@ public class MqttClientHandler extends ChannelDuplexHandler implements MqttFixed
   public void publishRead(ChannelHandlerContext ctx, MqttPublishMessage msg) throws Exception {
     final MqttFixedHeader fixedHeader = msg.fixedHeader();
     final MqttPublishVariableHeader variableHeader = msg.variableHeader();
-    subscriber.publicationAlived(new MqttPublication(
+    subscriber.arrived(ctx.channel(), new MqttPublication(
         fixedHeader.isDup(), fixedHeader.qosLevel(), fixedHeader.isRetain(),
         variableHeader.topicName(), variableHeader.packetId(),
         msg.payload()));

@@ -15,7 +15,9 @@
  */
 package io.gambusia.mqtt;
 
+import io.netty.channel.Channel;
+
 public interface MqttSubscriber {
 
-  void publicationAlived(MqttPublication publication) throws Exception;
+  void arrived(Channel ch, MqttPublication publication) throws Exception;
 }

@@ -94,7 +94,7 @@ class MqttAsyncClientTest {
   static void setUpBeforeClass() throws Exception {
     workerGroup = new NioEventLoopGroup();
     subscribeQueue = new ArrayBlockingQueue<>(8);
-    MqttSubscriber subscriber = publication -> subscribeQueue.put(publication);
+    MqttSubscriber subscriber = (ch, msg) -> subscribeQueue.put(msg);
 
     b = new Bootstrap();
     b.group(workerGroup);
