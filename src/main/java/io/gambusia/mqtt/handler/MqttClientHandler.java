@@ -19,10 +19,8 @@ import static io.gambusia.netty.util.Args.*;
 import java.nio.channels.AlreadyConnectedException;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.NotYetConnectedException;
-import java.util.Map;
+import java.util.LinkedList;
 import java.util.Queue;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
@@ -71,6 +69,8 @@ import io.netty.handler.codec.mqtt.MqttUnsubscribePayload;
 import io.netty.util.Timeout;
 import io.netty.util.Timer;
 import io.netty.util.TimerTask;
+import io.netty.util.collection.IntObjectHashMap;
+import io.netty.util.collection.IntObjectMap;
 import io.netty.util.concurrent.Promise;
 import io.netty.util.concurrent.PromiseNotifier;
 
@@ -92,12 +92,12 @@ public class MqttClientHandler extends ChannelDuplexHandler implements MqttFixed
   private final MqttPacketId unsubscribeId = new MqttPacketId();
 
   private MqttConnectPromise connectPromise = null;
-  private final Map<Integer, MqttPublishPromise> publishPromises = new ConcurrentHashMap<>();
-  private final Map<Integer, Promise<Void>> releasePromises = new ConcurrentHashMap<>();
-  private final Map<Integer, Promise<Void>> receivePromises = new ConcurrentHashMap<>();
-  private final Map<Integer, Promise<MqttQoS[]>> subscribePromises = new ConcurrentHashMap<>();
-  private final Map<Integer, Promise<Void>> unsubscribePromises = new ConcurrentHashMap<>();
-  private final Queue<Promise<Void>> pingPromises = new ConcurrentLinkedQueue<>();
+  private final IntObjectMap<MqttPublishPromise> publishPromises = new IntObjectHashMap<>();
+  private final IntObjectMap<Promise<Void>> releasePromises = new IntObjectHashMap<>();
+  private final IntObjectMap<Promise<Void>> receivePromises = new IntObjectHashMap<>();
+  private final IntObjectMap<Promise<MqttQoS[]>> subscribePromises = new IntObjectHashMap<>();
+  private final IntObjectMap<Promise<Void>> unsubscribePromises = new IntObjectHashMap<>();
+  private final Queue<Promise<Void>> pingPromises = new LinkedList<>();
 
   public MqttClientHandler(MqttSubscriber subscriber,
       long defaultTimeout, TimeUnit defaultTimeunit) {
@@ -640,7 +640,7 @@ public class MqttClientHandler extends ChannelDuplexHandler implements MqttFixed
     }
 
     @Override
-    public void accept(Integer i, Promise<?> p) {
+    public void accept(Integer id, Promise<?> p) {
       if (p != null && !p.isDone()) {
         p.tryFailure(cause);
       }
