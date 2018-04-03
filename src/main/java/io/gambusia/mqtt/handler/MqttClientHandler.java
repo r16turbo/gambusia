@@ -101,24 +101,24 @@ public class MqttClientHandler extends ChannelDuplexHandler implements MqttFixed
 
   public MqttClientHandler(MqttSubscriber subscriber,
       long defaultTimeout, TimeUnit defaultTimeunit) {
-    this(subscriber, 1, defaultTimeout, defaultTimeunit, null);
+    this(subscriber, new MqttPacketId(), defaultTimeout, defaultTimeunit, null);
   }
 
   public MqttClientHandler(MqttSubscriber subscriber,
       long defaultTimeout, TimeUnit defaultTimeunit, Timer timer) {
-    this(subscriber, 1, defaultTimeout, defaultTimeunit, timer);
+    this(subscriber, new MqttPacketId(), defaultTimeout, defaultTimeunit, timer);
   }
 
-  public MqttClientHandler(MqttSubscriber subscriber, int publishId,
+  public MqttClientHandler(MqttSubscriber subscriber, MqttPacketId publishId,
       long defaultTimeout, TimeUnit defaultTimeunit) {
     this(subscriber, publishId, defaultTimeout, defaultTimeunit, null);
   }
 
-  public MqttClientHandler(MqttSubscriber subscriber, int publishId,
+  public MqttClientHandler(MqttSubscriber subscriber, MqttPacketId publishId,
       long defaultTimeout, TimeUnit defaultTimeunit, Timer timer) {
 
     this.subscriber = checkNotNull(subscriber, "subscriber");
-    this.publishId = new MqttPacketId(publishId);
+    this.publishId = checkNotNull(publishId, "publishId");
     this.defaultTimeout = checkPositive(defaultTimeout, "defaultTimeout");
     this.defaultTimeunit = checkNotNull(defaultTimeunit, "defaultTimeunit");
 
