@@ -53,7 +53,7 @@ public class PromiseBarrier<V> implements GenericFutureListener<Future<V>> {
     return this;
   }
 
-  public int getNumberWaiting() {
+  public int numberWaiting() {
     return count.get();
   }
 

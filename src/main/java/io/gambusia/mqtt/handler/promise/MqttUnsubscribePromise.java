@@ -39,7 +39,7 @@ public class MqttUnsubscribePromise extends MqttTimeLimitPromise<Void> {
         Arrays.asList(checkNotContainsNull(topicFilters, "topicFilters")));
   }
 
-  public List<String> getTopicFilters() {
+  public List<String> topicFilters() {
     return topicFilters;
   }
 

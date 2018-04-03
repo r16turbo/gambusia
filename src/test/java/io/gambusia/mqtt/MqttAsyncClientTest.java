@@ -86,7 +86,7 @@ class MqttAsyncClientTest {
       MqttSubscription.qos2(TOPIC2),
   };
   private final String[] topicFilters = Arrays.stream(subscriptions)
-      .map(s -> s.getTopicFilter()).toArray(String[]::new);
+      .map(s -> s.topicFilter()).toArray(String[]::new);
   private final ByteBuf payload = Unpooled.unreleasableBuffer(
       Unpooled.wrappedBuffer("Hello World!".getBytes(StandardCharsets.UTF_8)));
 
@@ -138,7 +138,7 @@ class MqttAsyncClientTest {
   void test001() throws InterruptedException, ExecutionException {
     MqttConnectResult result = client.connect(true, 2, 1, TimeUnit.SECONDS, "test").get();
     assertNotNull(result);
-    assertEquals(0, result.getReturnCode());
+    assertEquals(0, result.returnCode());
     assertFalse(result.isSessionPresent());
   }
 
@@ -154,7 +154,7 @@ class MqttAsyncClientTest {
         final MqttSubscription subscription = subscriptions[i];
         final MqttQoS grantedQoS = results[i];
         logger.info("subscribe: topicFilter={}, requestedQoS={}, grantedQoS={}",
-            subscription.getTopicFilter(), subscription.getQoS(), grantedQoS);
+            subscription.topicFilter(), subscription.qos(), grantedQoS);
       }
     }
   }
@@ -185,7 +185,7 @@ class MqttAsyncClientTest {
     MqttPublishFuture future = client.publish0(false, TOPIC0, payload);
     assertNull(future.get());
     if (future.isReleasePending()) {
-      client.release(future.getPacketId()).addListener(f -> assertTrue(f.isSuccess())).sync();
+      client.release(future.packetId()).addListener(f -> assertTrue(f.isSuccess())).sync();
     }
     assertTimeout(Duration.ofSeconds(1), () -> received(subscribeQueue.take()));
   }
@@ -196,7 +196,7 @@ class MqttAsyncClientTest {
     MqttPublishFuture future = client.publish1(false, TOPIC1, payload);
     assertNull(future.get());
     if (future.isReleasePending()) {
-      client.release(future.getPacketId()).addListener(f -> assertTrue(f.isSuccess())).sync();
+      client.release(future.packetId()).addListener(f -> assertTrue(f.isSuccess())).sync();
     }
     assertTimeout(Duration.ofSeconds(1), () -> received(subscribeQueue.take()));
   }
@@ -207,7 +207,7 @@ class MqttAsyncClientTest {
     MqttPublishFuture future = client.publish2(false, TOPIC2, payload);
     assertNull(future.get());
     if (future.isReleasePending()) {
-      client.release(future.getPacketId()).addListener(f -> assertTrue(f.isSuccess())).sync();
+      client.release(future.packetId()).addListener(f -> assertTrue(f.isSuccess())).sync();
     }
     assertTimeout(Duration.ofSeconds(1), () -> received(subscribeQueue.take()));
   }
@@ -222,9 +222,9 @@ class MqttAsyncClientTest {
 
     MqttPublishFuture future = client.publish(failure);
     assertNull(future.get());
-    assertEquals(failure.getPacketId(), future.getPacketId());
+    assertEquals(failure.packetId(), future.packetId());
     if (future.isReleasePending()) {
-      client.release(future.getPacketId()).addListener(f -> assertTrue(f.isSuccess())).sync();
+      client.release(future.packetId()).addListener(f -> assertTrue(f.isSuccess())).sync();
     }
     assertTimeout(Duration.ofSeconds(1), () -> received(subscribeQueue.take()));
   }
@@ -237,9 +237,9 @@ class MqttAsyncClientTest {
 
     MqttPublishFuture future = client.publish(failure);
     assertNull(future.get());
-    assertEquals(failure.getPacketId(), future.getPacketId());
+    assertEquals(failure.packetId(), future.packetId());
     if (future.isReleasePending()) {
-      client.release(future.getPacketId()).addListener(f -> assertTrue(f.isSuccess())).sync();
+      client.release(future.packetId()).addListener(f -> assertTrue(f.isSuccess())).sync();
     }
     assertTimeout(Duration.ofSeconds(1), () -> received(subscribeQueue.take()));
   }
@@ -263,7 +263,7 @@ class MqttAsyncClientTest {
       MqttPublishFuture future = client.publish(qos, false, topic, payload);
       assertNull(future.get());
       if (future.isReleasePending()) {
-        client.release(future.getPacketId()).addListener(f -> assertTrue(f.isSuccess())).sync();
+        client.release(future.packetId()).addListener(f -> assertTrue(f.isSuccess())).sync();
       }
     }
     logger.info("publish: {}tps", () -> {
@@ -287,9 +287,9 @@ class MqttAsyncClientTest {
     while ((publication = subscribeQueue.poll()) != null) {
       try (MqttPublication msg = publication) {
         logger.warn("unread: dup={}, qos={}, retain={}, packetId={}, topic={}, payload={}",
-            msg.isDuplicate(), msg.getQoS(), msg.isRetain(),
-            msg.getPacketId(), msg.getTopic(),
-            msg.getPayload().toString(StandardCharsets.UTF_8));
+            msg.isDuplicate(), msg.qos(), msg.isRetain(),
+            msg.packetId(), msg.topic(),
+            msg.payload().toString(StandardCharsets.UTF_8));
       }
     }
   }
@@ -297,17 +297,17 @@ class MqttAsyncClientTest {
   private void received(MqttPublication publication) throws InterruptedException {
     try (MqttPublication msg = publication) {
       logger.info("receive: dup={}, qos={}, retain={}, packetId={}, topic={}, payload={}",
-          msg.isDuplicate(), msg.getQoS(), msg.isRetain(),
-          msg.getPacketId(), msg.getTopic(),
-          msg.getPayload().toString(StandardCharsets.UTF_8));
+          msg.isDuplicate(), msg.qos(), msg.isRetain(),
+          msg.packetId(), msg.topic(),
+          msg.payload().toString(StandardCharsets.UTF_8));
 
-      switch (msg.getQoS()) {
+      switch (msg.qos()) {
         case AT_LEAST_ONCE:
-          client.ack(msg.getPacketId()).addListener(f -> assertTrue(f.isSuccess())).sync();
+          client.ack(msg.packetId()).addListener(f -> assertTrue(f.isSuccess())).sync();
           break;
         case EXACTLY_ONCE:
-          client.received(msg.getPacketId()).addListener(f -> assertTrue(f.isSuccess())).sync();
-          client.complete(msg.getPacketId()).addListener(f -> assertTrue(f.isSuccess())).sync();
+          client.received(msg.packetId()).addListener(f -> assertTrue(f.isSuccess())).sync();
+          client.complete(msg.packetId()).addListener(f -> assertTrue(f.isSuccess())).sync();
           break;
         default:
       }

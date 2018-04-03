@@ -53,16 +53,16 @@ public class MqttPublishPromise extends MqttTimeLimitPromise<Void> implements Mq
   }
 
   @Override
-  public MqttArticle getArticle() {
+  public MqttArticle article() {
     return article;
   }
 
   @Override
-  public int getPacketId() {
+  public int packetId() {
     return packetId;
   }
 
-  public void setPacketId(int packetId) {
+  public void packetId(int packetId) {
     this.packetId = packetId;
   }
 
@@ -73,12 +73,12 @@ public class MqttPublishPromise extends MqttTimeLimitPromise<Void> implements Mq
 
   @Override
   public boolean isReleasePending() {
-    return (!isDone() || isSuccess()) && article.getQoS() == MqttQoS.EXACTLY_ONCE;
+    return (!isDone() || isSuccess()) && article.qos() == MqttQoS.EXACTLY_ONCE;
   }
 
   @Override
   public void run(Timeout timeout) {
-    switch (article.getQoS()) {
+    switch (article.qos()) {
       case AT_LEAST_ONCE:
         tryFailure(new TimeoutException("PUBACK"));
         break;

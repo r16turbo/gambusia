@@ -29,7 +29,7 @@ public class MqttConnectResult {
     return sessionPresent;
   }
 
-  public short getReturnCode() {
+  public short returnCode() {
     return returnCode;
   }
 }

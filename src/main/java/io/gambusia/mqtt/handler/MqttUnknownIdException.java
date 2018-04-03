@@ -30,11 +30,11 @@ public class MqttUnknownIdException extends Exception {
     this.packetId = packetId;
   }
 
-  public MqttMessageType getMessageType() {
+  public MqttMessageType messageType() {
     return messageType;
   }
 
-  public int getPacketId() {
+  public int packetId() {
     return packetId;
   }
 }

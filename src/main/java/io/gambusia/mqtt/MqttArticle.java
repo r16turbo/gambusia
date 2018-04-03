@@ -45,7 +45,7 @@ public class MqttArticle implements ByteBufHolder {
     this.payload = checkNotNull(payload, "payload");
   }
 
-  public MqttQoS getQoS() {
+  public MqttQoS qos() {
     return qos;
   }
 
@@ -53,16 +53,16 @@ public class MqttArticle implements ByteBufHolder {
     return retain;
   }
 
-  public String getTopic() {
+  public String topic() {
     return topic;
   }
 
-  public ByteBuf getPayload() {
+  public ByteBuf payload() {
     return content();
   }
 
-  public byte[] getPayloadAsBytes() {
-    ByteBuf payload = content();
+  public byte[] payloadAsBytes() {
+    ByteBuf payload = content().duplicate();
     byte[] bytes = new byte[payload.capacity()];
     payload.readBytes(bytes);
     return bytes;

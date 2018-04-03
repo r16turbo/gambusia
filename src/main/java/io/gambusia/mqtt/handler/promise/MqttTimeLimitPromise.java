@@ -37,11 +37,11 @@ public abstract class MqttTimeLimitPromise<V> extends DefaultPromise<V> implemen
     return limited;
   }
 
-  public long getTimeout() {
+  public long timeout() {
     return timeout;
   }
 
-  public TimeUnit getTimeunit() {
+  public TimeUnit timeunit() {
     return timeunit;
   }
 }

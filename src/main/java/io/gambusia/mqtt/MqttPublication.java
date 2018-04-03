@@ -45,7 +45,7 @@ public class MqttPublication implements ByteBufHolder, AutoCloseable {
     return duplicate;
   }
 
-  public MqttQoS getQoS() {
+  public MqttQoS qos() {
     return qos;
   }
 
@@ -53,15 +53,15 @@ public class MqttPublication implements ByteBufHolder, AutoCloseable {
     return retain;
   }
 
-  public String getTopic() {
+  public String topic() {
     return topic;
   }
 
-  public int getPacketId() {
+  public int packetId() {
     return packetId;
   }
 
-  public ByteBuf getPayload() {
+  public ByteBuf payload() {
     return content();
   }
 

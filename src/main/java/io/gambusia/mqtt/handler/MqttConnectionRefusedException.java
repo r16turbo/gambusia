@@ -26,7 +26,7 @@ public class MqttConnectionRefusedException extends Exception {
     this.returnCode = returnCode;
   }
 
-  public byte getReturnCode() {
+  public byte returnCode() {
     return returnCode;
   }
 

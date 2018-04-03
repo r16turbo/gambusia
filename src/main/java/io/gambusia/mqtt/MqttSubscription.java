@@ -28,11 +28,11 @@ public class MqttSubscription {
     this.topicFilter = checkNotEmpty(topicFilter, "topicFilter");
   }
 
-  public MqttQoS getQoS() {
+  public MqttQoS qos() {
     return qos;
   }
 
-  public String getTopicFilter() {
+  public String topicFilter() {
     return topicFilter;
   }
 

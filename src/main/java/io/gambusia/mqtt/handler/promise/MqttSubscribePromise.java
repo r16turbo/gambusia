@@ -41,7 +41,7 @@ public class MqttSubscribePromise extends MqttTimeLimitPromise<MqttQoS[]> {
         Arrays.asList(checkNotContainsNull(subscriptions, "subscriptions")));
   }
 
-  public List<MqttSubscription> getSubscriptions() {
+  public List<MqttSubscription> subscriptions() {
     return subscriptions;
   }
 

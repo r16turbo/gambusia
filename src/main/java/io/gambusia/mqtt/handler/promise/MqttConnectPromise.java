@@ -66,11 +66,11 @@ public class MqttConnectPromise extends MqttTimeLimitPromise<MqttConnectResult> 
     this.pingTimeunit = pingTimeunit;
   }
 
-  public String getProtocolName() {
+  public String protocolName() {
     return protocolName;
   }
 
-  public int getProtocolLevel() {
+  public int protocolLevel() {
     return protocolLevel;
   }
 
@@ -78,31 +78,31 @@ public class MqttConnectPromise extends MqttTimeLimitPromise<MqttConnectResult> 
     return cleanSession;
   }
 
-  public int getKeepAlive() {
+  public int keepAlive() {
     return keepAlive;
   }
 
-  public String getClientId() {
+  public String clientId() {
     return clientId;
   }
 
-  public MqttArticle getWill() {
+  public MqttArticle will() {
     return will;
   }
 
-  public String getUsername() {
+  public String username() {
     return username;
   }
 
-  public byte[] getPassword() {
+  public byte[] password() {
     return password;
   }
 
-  public long getPingInterval() {
+  public long pingInterval() {
     return pingInterval;
   }
 
-  public TimeUnit getPingTimeunit() {
+  public TimeUnit pingTimeunit() {
     return pingTimeunit;
   }
 

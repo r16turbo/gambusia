@@ -19,11 +19,11 @@ import io.netty.util.concurrent.Future;
 
 public interface MqttPublishFuture extends Future<Void> {
 
-  MqttArticle getArticle();
+  MqttArticle article();
 
   boolean isDuplicate();
 
-  int getPacketId();
+  int packetId();
 
   boolean isReleasePending();
 }

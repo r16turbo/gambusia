@@ -33,7 +33,7 @@ public class MqttPubRecPromise extends MqttTimeLimitPromise<Void> {
     this.packetId = packetId;
   }
 
-  public int getPacketId() {
+  public int packetId() {
     return packetId;
   }
 

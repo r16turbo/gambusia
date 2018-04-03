@@ -218,26 +218,26 @@ public class MqttClientHandler extends ChannelDuplexHandler implements MqttFixed
       // channel(cancel, failure) -> promise
       channel.addListener(new PromiseCanceller<>(connectPromise, true));
       { // create mqtt message
-        MqttArticle will = msg.getWill();
+        MqttArticle will = msg.will();
         boolean hasWill = will != null;
         message = new MqttConnectMessage(
             CONNECT_HEADER,
             new MqttConnectVariableHeader(
-                msg.getProtocolName(),
-                msg.getProtocolLevel(),
-                msg.getUsername() != null,
-                msg.getPassword() != null,
+                msg.protocolName(),
+                msg.protocolLevel(),
+                msg.username() != null,
+                msg.password() != null,
                 !hasWill ? false : will.isRetain(),
-                !hasWill ? 0 : will.getQoS().value(),
+                !hasWill ? 0 : will.qos().value(),
                 hasWill,
                 msg.isCleanSession(),
-                msg.getKeepAlive()),
+                msg.keepAlive()),
             new MqttConnectPayload(
-                msg.getClientId(),
-                !hasWill ? null : will.getTopic(),
-                !hasWill ? null : will.getPayloadAsBytes(),
-                msg.getUsername(),
-                msg.getPassword()));
+                msg.clientId(),
+                !hasWill ? null : will.topic(),
+                !hasWill ? null : will.payloadAsBytes(),
+                msg.username(),
+                msg.password()));
       }
       writeAndTouch(ctx, message, channel);
     }
@@ -254,7 +254,7 @@ public class MqttClientHandler extends ChannelDuplexHandler implements MqttFixed
       if (returnCode == MqttConnectReturnCode.CONNECTION_ACCEPTED) {
         connectPromise.trySuccess(new MqttConnectResult(
             variableHeader.isSessionPresent(), returnCode.byteValue()));
-        startKeepAlive(ctx, connectPromise.getPingInterval(), connectPromise.getPingTimeunit());
+        startKeepAlive(ctx, connectPromise.pingInterval(), connectPromise.pingTimeunit());
       } else {
         connectPromise.tryFailure(new MqttConnectionRefusedException(returnCode.byteValue()));
       }
@@ -267,25 +267,25 @@ public class MqttClientHandler extends ChannelDuplexHandler implements MqttFixed
     if (!isConnected()) {
       msg.setFailure(new NotYetConnectedException());
     } else {
-      final MqttArticle article = msg.getArticle();
+      final MqttArticle article = msg.article();
       final int packetId;
       final boolean atMostOnce;
-      switch (article.getQoS()) {
+      switch (article.qos()) {
         case AT_LEAST_ONCE:
           if (msg.isDuplicate()) {
-            packetId = msg.getPacketId();
+            packetId = msg.packetId();
           } else {
             packetId = publishId.getAndIncrement();
-            msg.setPacketId(packetId);
+            msg.packetId(packetId);
           }
           atMostOnce = false;
           break;
         case EXACTLY_ONCE:
           if (msg.isDuplicate()) {
-            packetId = msg.getPacketId();
+            packetId = msg.packetId();
           } else {
             packetId = publishId.getAndIncrement();
-            msg.setPacketId(packetId);
+            msg.packetId(packetId);
           }
           atMostOnce = false;
           break;
@@ -302,13 +302,13 @@ public class MqttClientHandler extends ChannelDuplexHandler implements MqttFixed
         final MqttPublishMessage message;
         if (atMostOnce) {
           // QoS 0
-          payload = article.getPayload();
+          payload = article.payload();
           promise = msg;
           // channel(notify) -> promise
           channel.addListener(new PromiseNotifier<Void, ChannelFuture>(promise));
         } else {
           // QoS 1,2
-          payload = article.getPayload().retain();
+          payload = article.payload().retain();
           promise = embedTimeLimit(msg);
           promise.addListener(f -> publishPromises.remove(packetId, promise));
           // channel(cancel, failure) -> promise
@@ -319,11 +319,11 @@ public class MqttClientHandler extends ChannelDuplexHandler implements MqttFixed
           message = new MqttPublishMessage(
               new MqttFixedHeader(MqttMessageType.PUBLISH,
                   promise.isDuplicate(),
-                  article.getQoS(),
+                  article.qos(),
                   article.isRetain(),
                   0 // Remaining Length (don't care)
               ),
-              new MqttPublishVariableHeader(article.getTopic(), packetId),
+              new MqttPublishVariableHeader(article.topic(), packetId),
               payload);
         }
         writeAndTouch(ctx, message, channel);
@@ -340,12 +340,12 @@ public class MqttClientHandler extends ChannelDuplexHandler implements MqttFixed
       if (promise == null) {
         ctx.fireExceptionCaught(new MqttUnknownIdException(MqttMessageType.PUBACK, packetId));
       } else {
-        final MqttArticle article = promise.getArticle();
-        final MqttQoS qos = article.getQoS();
+        final MqttArticle article = promise.article();
+        final MqttQoS qos = article.qos();
         if (qos != MqttQoS.AT_LEAST_ONCE) {
           promise.tryFailure(new MqttQoSException("invalid=" + qos.value() + ", expect=1"));
         } else {
-          promise.getArticle().release();
+          promise.article().release();
           promise.trySuccess(null);
         }
       }
@@ -361,12 +361,12 @@ public class MqttClientHandler extends ChannelDuplexHandler implements MqttFixed
       if (promise == null) {
         ctx.fireExceptionCaught(new MqttUnknownIdException(MqttMessageType.PUBREC, packetId));
       } else {
-        final MqttArticle article = promise.getArticle();
-        final MqttQoS qos = article.getQoS();
+        final MqttArticle article = promise.article();
+        final MqttQoS qos = article.qos();
         if (qos != MqttQoS.EXACTLY_ONCE) {
           promise.tryFailure(new MqttQoSException("invalid=" + qos.value() + ", expect=2"));
         } else {
-          promise.getArticle().release();
+          promise.article().release();
           promise.trySuccess(null);
         }
       }
@@ -379,7 +379,7 @@ public class MqttClientHandler extends ChannelDuplexHandler implements MqttFixed
     if (!isConnected()) {
       msg.setFailure(new NotYetConnectedException());
     } else {
-      final int packetId = msg.getPacketId();
+      final int packetId = msg.packetId();
       if (releasePromises.containsKey(packetId)) {
         msg.setFailure(new MqttDuplicateIdException(MqttMessageType.PUBREL, packetId));
       } else {
@@ -424,7 +424,7 @@ public class MqttClientHandler extends ChannelDuplexHandler implements MqttFixed
     if (!isConnected()) {
       msg.setFailure(new NotYetConnectedException());
     } else {
-      final int packetId = msg.getPacketId();
+      final int packetId = msg.packetId();
       if (receivePromises.containsKey(packetId)) {
         msg.setFailure(new MqttDuplicateIdException(MqttMessageType.PUBREC, packetId));
       } else {
@@ -473,10 +473,10 @@ public class MqttClientHandler extends ChannelDuplexHandler implements MqttFixed
         message = new MqttSubscribeMessage(
             SUBSCRIBE_HEADER,
             MqttMessageIdVariableHeader.from(packetId),
-            new MqttSubscribePayload(msg.getSubscriptions().stream()
+            new MqttSubscribePayload(msg.subscriptions().stream()
                 .map(subscription -> new MqttTopicSubscription(
-                    subscription.getTopicFilter(),
-                    subscription.getQoS()))
+                    subscription.topicFilter(),
+                    subscription.qos()))
                 .collect(Collectors.toList())));
         subscribePromises.put(packetId, promise);
         writeAndTouch(ctx, message, channel);
@@ -519,7 +519,7 @@ public class MqttClientHandler extends ChannelDuplexHandler implements MqttFixed
         message = new MqttUnsubscribeMessage(
             UNSUBSCRIBE_HEADER,
             MqttMessageIdVariableHeader.from(packetId),
-            new MqttUnsubscribePayload(msg.getTopicFilters()));
+            new MqttUnsubscribePayload(msg.topicFilters()));
         unsubscribePromises.put(packetId, promise);
         writeAndTouch(ctx, message, channel);
       }
@@ -585,7 +585,7 @@ public class MqttClientHandler extends ChannelDuplexHandler implements MqttFixed
   protected <P extends MqttTimeLimitPromise<V>, V> P embedTimeLimit(P promise) {
     final Timeout timeout;
     if (promise.isTimeLimited()) {
-      timeout = timer.newTimeout(promise, promise.getTimeout(), promise.getTimeunit());
+      timeout = timer.newTimeout(promise, promise.timeout(), promise.timeunit());
     } else {
       timeout = timer.newTimeout(promise, this.defaultTimeout, this.defaultTimeunit);
     }

@@ -244,11 +244,11 @@ public class MqttAsyncClient {
 
   // publish retry
   public MqttPublishFuture publish(MqttPublishFuture future) {
-    return publish(future.getArticle(), future.getPacketId());
+    return publish(future.article(), future.packetId());
   }
 
   public MqttPublishFuture publish(MqttPublishFuture future, long timeout, TimeUnit unit) {
-    return publish(future.getArticle(), future.getPacketId(), timeout, unit);
+    return publish(future.article(), future.packetId(), timeout, unit);
   }
 
   public MqttPublishFuture publish(MqttArticle article, int packetId) {
