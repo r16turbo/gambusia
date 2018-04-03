@@ -87,7 +87,7 @@ public class MqttClientHandler extends ChannelDuplexHandler implements MqttFixed
     lastWriteTimeNanos = System.nanoTime();
   };
 
-  private final MqttPacketId publishId = new MqttPacketId();
+  private final MqttPacketId publishId;
   private final MqttPacketId subscribeId = new MqttPacketId();
   private final MqttPacketId unsubscribeId = new MqttPacketId();
 
@@ -101,13 +101,24 @@ public class MqttClientHandler extends ChannelDuplexHandler implements MqttFixed
 
   public MqttClientHandler(MqttSubscriber subscriber,
       long defaultTimeout, TimeUnit defaultTimeunit) {
-    this(subscriber, defaultTimeout, defaultTimeunit, null);
+    this(subscriber, 1, defaultTimeout, defaultTimeunit, null);
   }
 
   public MqttClientHandler(MqttSubscriber subscriber,
       long defaultTimeout, TimeUnit defaultTimeunit, Timer timer) {
+    this(subscriber, 1, defaultTimeout, defaultTimeunit, timer);
+  }
+
+  public MqttClientHandler(MqttSubscriber subscriber, int publishId,
+      long defaultTimeout, TimeUnit defaultTimeunit) {
+    this(subscriber, publishId, defaultTimeout, defaultTimeunit, null);
+  }
+
+  public MqttClientHandler(MqttSubscriber subscriber, int publishId,
+      long defaultTimeout, TimeUnit defaultTimeunit, Timer timer) {
 
     this.subscriber = checkNotNull(subscriber, "subscriber");
+    this.publishId = new MqttPacketId(publishId);
     this.defaultTimeout = checkPositive(defaultTimeout, "defaultTimeout");
     this.defaultTimeunit = checkNotNull(defaultTimeunit, "defaultTimeunit");
 
@@ -116,6 +127,10 @@ public class MqttClientHandler extends ChannelDuplexHandler implements MqttFixed
 
   public boolean isConnected() {
     return connectPromise != null && connectPromise.isSuccess();
+  }
+
+  public int publishId() {
+    return publishId.get();
   }
 
   @Override
