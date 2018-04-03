@@ -41,11 +41,6 @@ public class MqttAsyncClient {
   private Channel ch;
   private EventExecutor executor;
 
-  public MqttAsyncClient() {
-    this.ch = null;
-    this.executor = null;
-  }
-
   public MqttAsyncClient(Channel ch) {
     set(ch);
   }
@@ -56,7 +51,8 @@ public class MqttAsyncClient {
 
   // initializer
   public void set(Channel ch) {
-    set(ch, ch.eventLoop());
+    this.ch = checkNotNull(ch, "ch");
+    this.executor = checkNotNull(ch.eventLoop(), "ch.eventLoop");
   }
 
   public void set(Channel ch, EventExecutor executor) {
