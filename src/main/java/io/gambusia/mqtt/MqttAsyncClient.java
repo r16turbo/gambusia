@@ -254,16 +254,24 @@ public class MqttAsyncClient {
   }
 
   public MqttPublishFuture publish(MqttArticle article, long timeout, TimeUnit unit) {
-    return writeAndFlush(new MqttPublishPromise(executor(), timeout, unit, article));
+    return writeAndFlush(new MqttPublishPromise(executor(), article, timeout, unit));
   }
 
   // publish retry
   public MqttPublishFuture publish(MqttPublishFuture future) {
-    return writeAndFlush(new MqttPublishPromise(executor(), future));
+    return publish(future.getArticle(), future.getPacketId());
   }
 
   public MqttPublishFuture publish(MqttPublishFuture future, long timeout, TimeUnit unit) {
-    return writeAndFlush(new MqttPublishPromise(executor(), timeout, unit, future));
+    return publish(future.getArticle(), future.getPacketId(), timeout, unit);
+  }
+
+  public MqttPublishFuture publish(MqttArticle article, int packetId) {
+    return writeAndFlush(new MqttPublishPromise(executor(), article, packetId));
+  }
+
+  public MqttPublishFuture publish(MqttArticle article, int packetId, long timeout, TimeUnit unit) {
+    return writeAndFlush(new MqttPublishPromise(executor(), article, packetId, timeout, unit));
   }
 
   // publish release

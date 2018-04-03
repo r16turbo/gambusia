@@ -32,27 +32,20 @@ public class MqttPublishPromise extends MqttTimeLimitPromise<Void> implements Mq
   private int packetId;
 
   public MqttPublishPromise(EventExecutor executor, MqttArticle article) {
-    this(executor, 0, null, article, 0);
+    this(executor, article, 0, 0, null);
   }
 
-  public MqttPublishPromise(EventExecutor executor, long timeout, TimeUnit timeunit,
-      MqttArticle article) {
-    this(executor, timeout, timeunit, article, 0);
+  public MqttPublishPromise(EventExecutor executor, MqttArticle article,
+      long timeout, TimeUnit timeunit) {
+    this(executor, article, 0, timeout, timeunit);
   }
 
-  public MqttPublishPromise(EventExecutor executor, MqttPublishFuture future) {
-    this(executor, 0, null,
-        checkNotNull(future, "future").getArticle(), future.getPacketId());
+  public MqttPublishPromise(EventExecutor executor, MqttArticle article, int packetId) {
+    this(executor, article, packetId, 0, null);
   }
 
-  public MqttPublishPromise(EventExecutor executor, long timeout, TimeUnit timeunit,
-      MqttPublishFuture future) {
-    this(executor, timeout, timeunit,
-        checkNotNull(future, "future").getArticle(), future.getPacketId());
-  }
-
-  protected MqttPublishPromise(EventExecutor executor, long timeout, TimeUnit timeunit,
-      MqttArticle article, int packetId) {
+  public MqttPublishPromise(EventExecutor executor, MqttArticle article, int packetId,
+      long timeout, TimeUnit timeunit) {
     super(executor, timeout, timeunit);
     this.article = checkNotNull(article, "article");
     this.duplicate = packetId > 0;
