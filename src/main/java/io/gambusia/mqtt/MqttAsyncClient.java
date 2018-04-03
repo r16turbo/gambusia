@@ -39,25 +39,14 @@ import io.netty.util.concurrent.Promise;
 public class MqttAsyncClient {
 
   private Channel ch;
-  private EventExecutor executor;
 
   public MqttAsyncClient(Channel ch) {
     set(ch);
   }
 
-  public MqttAsyncClient(Channel ch, EventExecutor executor) {
-    set(ch, executor);
-  }
-
   // initializer
   public void set(Channel ch) {
     this.ch = checkNotNull(ch, "ch");
-    this.executor = checkNotNull(ch.eventLoop(), "ch.eventLoop");
-  }
-
-  public void set(Channel ch, EventExecutor executor) {
-    this.ch = checkNotNull(ch, "ch");
-    this.executor = checkNotNull(executor, "executor");
   }
 
   // accessor
@@ -66,7 +55,7 @@ public class MqttAsyncClient {
   }
 
   public EventExecutor executor() {
-    return executor;
+    return ch.eventLoop();
   }
 
   // connect
