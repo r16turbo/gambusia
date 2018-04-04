@@ -15,9 +15,9 @@
  */
 package io.gambusia.mqtt;
 
+import static io.gambusia.mqtt.handler.MqttFixedHeaders.*;
 import java.nio.ByteBuffer;
 import java.util.concurrent.TimeUnit;
-import io.gambusia.mqtt.handler.MqttFixedHeaders;
 import io.gambusia.mqtt.handler.promise.MqttConnectPromise;
 import io.gambusia.mqtt.handler.promise.MqttPingPromise;
 import io.gambusia.mqtt.handler.promise.MqttPubRecPromise;
@@ -272,8 +272,8 @@ public class MqttAsyncClient {
 
   // publish ack
   public Future<Void> ack(int packetId) {
-    return channel().writeAndFlush(new MqttMessage(
-        MqttFixedHeaders.PUBACK_HEADER, MqttMessageIdVariableHeader.from(packetId)));
+    return channel().writeAndFlush(new MqttMessage(PUBACK_HEADER,
+        MqttMessageIdVariableHeader.from(packetId)));
   }
 
   // publish received
@@ -287,8 +287,8 @@ public class MqttAsyncClient {
 
   // publish complete
   public Future<Void> complete(int packetId) {
-    return channel().writeAndFlush(new MqttMessage(
-        MqttFixedHeaders.PUBCOMP_HEADER, MqttMessageIdVariableHeader.from(packetId)));
+    return channel().writeAndFlush(new MqttMessage(PUBCOMP_HEADER,
+        MqttMessageIdVariableHeader.from(packetId)));
   }
 
   // subscribe
@@ -321,7 +321,7 @@ public class MqttAsyncClient {
 
   // disconnect
   public Future<Void> disconnect() {
-    return channel().writeAndFlush(new MqttMessage(MqttFixedHeaders.DISCONNECT_HEADER));
+    return channel().writeAndFlush(new MqttMessage(DISCONNECT_HEADER));
   }
 
   protected <P extends Promise<V>, V> P writeAndFlush(P promise) {

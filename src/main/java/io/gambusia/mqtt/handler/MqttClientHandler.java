@@ -15,6 +15,7 @@
  */
 package io.gambusia.mqtt.handler;
 
+import static io.gambusia.mqtt.handler.MqttFixedHeaders.*;
 import static io.gambusia.netty.util.Args.*;
 import java.nio.channels.AlreadyConnectedException;
 import java.nio.channels.ClosedChannelException;
@@ -74,7 +75,7 @@ import io.netty.util.collection.IntObjectMap;
 import io.netty.util.concurrent.Promise;
 import io.netty.util.concurrent.PromiseNotifier;
 
-public class MqttClientHandler extends ChannelDuplexHandler implements MqttFixedHeaders {
+public class MqttClientHandler extends ChannelDuplexHandler {
 
   private final MqttSubscriber subscriber;
   private final long defaultTimeout;
