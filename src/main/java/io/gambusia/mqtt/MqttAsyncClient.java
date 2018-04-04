@@ -28,10 +28,10 @@ import io.gambusia.mqtt.handler.promise.MqttUnsubscribePromise;
 import io.gambusia.netty.util.concurrent.PromiseCanceller;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
+import io.netty.channel.EventLoop;
 import io.netty.handler.codec.mqtt.MqttMessage;
 import io.netty.handler.codec.mqtt.MqttMessageIdVariableHeader;
 import io.netty.handler.codec.mqtt.MqttQoS;
-import io.netty.util.concurrent.EventExecutor;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.Promise;
 
@@ -56,7 +56,7 @@ public class MqttAsyncClient {
     this.ch = ch;
   }
 
-  public EventExecutor executor() {
+  public EventLoop eventLoop() {
     return ch.eventLoop();
   }
 
@@ -105,7 +105,7 @@ public class MqttAsyncClient {
   public Future<MqttConnectResult> connect(boolean cleanSession,
       int keepAlive, long pingInterval, TimeUnit pingTimeunit,
       String clientId, MqttArticle will, String username, byte[] password) {
-    return writeAndFlush(new MqttConnectPromise(executor(), "MQTT", 4,
+    return writeAndFlush(new MqttConnectPromise(eventLoop(), "MQTT", 4,
         cleanSession, keepAlive, clientId, will, username, password, pingInterval, pingTimeunit));
   }
 
@@ -113,7 +113,7 @@ public class MqttAsyncClient {
       int keepAlive, long pingInterval, TimeUnit pingTimeunit,
       String clientId, MqttArticle will, String username, byte[] password,
       long timeout, TimeUnit unit) {
-    return writeAndFlush(new MqttConnectPromise(executor(), timeout, unit, "MQTT", 4,
+    return writeAndFlush(new MqttConnectPromise(eventLoop(), timeout, unit, "MQTT", 4,
         cleanSession, keepAlive, clientId, will, username, password, pingInterval, pingTimeunit));
   }
 
@@ -237,11 +237,11 @@ public class MqttAsyncClient {
 
   // publish base
   public MqttPublishFuture publish(MqttArticle article) {
-    return writeAndFlush(new MqttPublishPromise(executor(), article));
+    return writeAndFlush(new MqttPublishPromise(eventLoop(), article));
   }
 
   public MqttPublishFuture publish(MqttArticle article, long timeout, TimeUnit unit) {
-    return writeAndFlush(new MqttPublishPromise(executor(), article, timeout, unit));
+    return writeAndFlush(new MqttPublishPromise(eventLoop(), article, timeout, unit));
   }
 
   // publish retry
@@ -254,20 +254,20 @@ public class MqttAsyncClient {
   }
 
   public MqttPublishFuture publish(MqttArticle article, int packetId) {
-    return writeAndFlush(new MqttPublishPromise(executor(), article, packetId));
+    return writeAndFlush(new MqttPublishPromise(eventLoop(), article, packetId));
   }
 
   public MqttPublishFuture publish(MqttArticle article, int packetId, long timeout, TimeUnit unit) {
-    return writeAndFlush(new MqttPublishPromise(executor(), article, packetId, timeout, unit));
+    return writeAndFlush(new MqttPublishPromise(eventLoop(), article, packetId, timeout, unit));
   }
 
   // publish release
   public Future<Void> release(int packetId) {
-    return writeAndFlush(new MqttPubRelPromise(executor(), packetId));
+    return writeAndFlush(new MqttPubRelPromise(eventLoop(), packetId));
   }
 
   public Future<Void> release(int packetId, long timeout, TimeUnit unit) {
-    return writeAndFlush(new MqttPubRelPromise(executor(), timeout, unit, packetId));
+    return writeAndFlush(new MqttPubRelPromise(eventLoop(), timeout, unit, packetId));
   }
 
   // publish ack
@@ -278,11 +278,11 @@ public class MqttAsyncClient {
 
   // publish received
   public Future<Void> received(int packetId) {
-    return writeAndFlush(new MqttPubRecPromise(executor(), packetId));
+    return writeAndFlush(new MqttPubRecPromise(eventLoop(), packetId));
   }
 
   public Future<Void> received(int packetId, long timeout, TimeUnit unit) {
-    return writeAndFlush(new MqttPubRecPromise(executor(), timeout, unit, packetId));
+    return writeAndFlush(new MqttPubRecPromise(eventLoop(), timeout, unit, packetId));
   }
 
   // publish complete
@@ -293,30 +293,30 @@ public class MqttAsyncClient {
 
   // subscribe
   public Future<MqttQoS[]> subscribe(MqttSubscription... subscriptions) {
-    return writeAndFlush(new MqttSubscribePromise(executor(), subscriptions));
+    return writeAndFlush(new MqttSubscribePromise(eventLoop(), subscriptions));
   }
 
   public Future<MqttQoS[]> subscribe(long timeout, TimeUnit unit,
       MqttSubscription... subscriptions) {
-    return writeAndFlush(new MqttSubscribePromise(executor(), timeout, unit, subscriptions));
+    return writeAndFlush(new MqttSubscribePromise(eventLoop(), timeout, unit, subscriptions));
   }
 
   // unsubscribe
   public Future<Void> unsubscribe(String... topicFilters) {
-    return writeAndFlush(new MqttUnsubscribePromise(executor(), topicFilters));
+    return writeAndFlush(new MqttUnsubscribePromise(eventLoop(), topicFilters));
   }
 
   public Future<Void> unsubscribe(long timeout, TimeUnit unit, String... topicFilters) {
-    return writeAndFlush(new MqttUnsubscribePromise(executor(), timeout, unit, topicFilters));
+    return writeAndFlush(new MqttUnsubscribePromise(eventLoop(), timeout, unit, topicFilters));
   }
 
   // ping
   public Future<Void> ping() {
-    return writeAndFlush(new MqttPingPromise(executor()));
+    return writeAndFlush(new MqttPingPromise(eventLoop()));
   }
 
   public Future<Void> ping(long timeout, TimeUnit unit) {
-    return writeAndFlush(new MqttPingPromise(executor(), timeout, unit));
+    return writeAndFlush(new MqttPingPromise(eventLoop(), timeout, unit));
   }
 
   // disconnect
