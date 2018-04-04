@@ -47,13 +47,15 @@ public class MqttAsyncClient {
     this.ch = ch;
   }
 
+  // initializer
+  public MqttAsyncClient set(Channel ch) {
+    this.ch = ch;
+    return this;
+  }
+
   // accessor
   public Channel channel() {
     return ch;
-  }
-
-  public void channel(Channel ch) {
-    this.ch = ch;
   }
 
   public EventLoop eventLoop() {
