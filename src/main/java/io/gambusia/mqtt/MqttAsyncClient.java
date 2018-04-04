@@ -15,7 +15,6 @@
  */
 package io.gambusia.mqtt;
 
-import static io.gambusia.netty.util.Args.*;
 import java.nio.ByteBuffer;
 import java.util.concurrent.TimeUnit;
 import io.gambusia.mqtt.handler.MqttFixedHeaders;
@@ -40,18 +39,21 @@ public class MqttAsyncClient {
 
   private Channel ch;
 
-  public MqttAsyncClient(Channel ch) {
-    set(ch);
+  public MqttAsyncClient() {
+    this.ch = null;
   }
 
-  // initializer
-  public void set(Channel ch) {
-    this.ch = checkNotNull(ch, "ch");
+  public MqttAsyncClient(Channel ch) {
+    this.ch = ch;
   }
 
   // accessor
   public Channel channel() {
     return ch;
+  }
+
+  public void channel(Channel ch) {
+    this.ch = ch;
   }
 
   public EventExecutor executor() {
