@@ -17,24 +17,27 @@ package io.gambusia.netty.util;
 
 import static io.gambusia.netty.util.Args.*;
 import static io.netty.util.internal.logging.InternalLoggerFactory.*;
-import java.util.Collections;
-import java.util.Map;
+import java.util.HashSet;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import io.netty.util.Timeout;
 import io.netty.util.Timer;
 import io.netty.util.TimerTask;
+import io.netty.util.collection.IntObjectHashMap;
 import io.netty.util.concurrent.EventExecutorGroup;
-import io.netty.util.concurrent.ScheduledFuture;
+import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.FutureListener;
 import io.netty.util.internal.logging.InternalLogger;
 
 public class EventExecutorTimer implements Timer {
 
   private static final InternalLogger logger = getInstance(EventExecutorTimer.class);
 
-  private final Map<Timeout, TimerTask> tasks = new ConcurrentHashMap<>();
+  private final IntObjectHashMap<Timeout> timeouts = new IntObjectHashMap<>();
   private final EventExecutorGroup executor;
+
+  private int timeoutId = 0;
+  private boolean stopped = false;
 
   public EventExecutorTimer(EventExecutorGroup executor) {
     this.executor = checkNotNull(executor, "executor");
@@ -42,35 +45,57 @@ public class EventExecutorTimer implements Timer {
 
   @Override
   public Timeout newTimeout(TimerTask task, long delay, TimeUnit unit) {
+    if (stopped) {
+      throw new IllegalStateException("cannot be started once stopped");
+    }
     return new EventExecutorTimeout(this, task, delay, unit);
   }
 
   @Override
   public Set<Timeout> stop() {
-    final Set<Timeout> unfinished = Collections.unmodifiableSet(tasks.keySet());
-    unfinished.forEach(timeout -> timeout.cancel());
+    this.stopped = true;
+
+    final Set<Timeout> unfinished;
+    synchronized (timeouts) {
+      unfinished = new HashSet<>(timeouts.values());
+    }
+
+    for (Timeout timeout : unfinished) {
+      timeout.cancel();
+    }
+
     return unfinished;
+  }
+
+  private int addTimeout(Timeout timeout) {
+    synchronized (timeouts) {
+      final int id = timeoutId++;
+      timeouts.put(id, timeout);
+      return id;
+    }
+  }
+
+  private void removeTimeout(int id) {
+    synchronized (timeouts) {
+      timeouts.remove(id);
+    }
   }
 
   private static final class EventExecutorTimeout implements Timeout {
 
     private final EventExecutorTimer timer;
     private final TimerTask task;
-    private final ScheduledFuture<?> future;
+
+    private final int id;
+    private final Future<?> future;
 
     EventExecutorTimeout(EventExecutorTimer timer, TimerTask task, long delay, TimeUnit unit) {
       this.timer = checkNotNull(timer, "timer");
       this.task = checkNotNull(task, "task");
-      this.future = timer.executor.schedule(() -> {
-        try {
-          this.task.run(this);
-        } catch (Throwable cause) {
-          logger.warn("An exception was thrown by TimerTask.", cause);
-        }
-      }, delay, unit);
-
-      this.future.addListener(f -> this.timer.tasks.remove(this));
-      this.timer.tasks.put(this, this.task);
+      this.id = timer.addTimeout(this);
+      this.future = timer.executor
+          .schedule(new TimeoutSchedule(this), delay, unit)
+          .addListener(new TimeoutRemover<>(timer, id));
     }
 
     @Override
@@ -96,6 +121,40 @@ public class EventExecutorTimer implements Timer {
     @Override
     public boolean cancel() {
       return future.cancel(false);
+    }
+
+    private static class TimeoutSchedule implements Runnable {
+
+      private final Timeout timeout;
+
+      TimeoutSchedule(Timeout timeout) {
+        this.timeout = timeout;
+      }
+
+      @Override
+      public void run() {
+        try {
+          timeout.task().run(timeout);
+        } catch (Throwable cause) {
+          logger.warn("An exception was thrown by TimerTask.", cause);
+        }
+      }
+    }
+
+    private static class TimeoutRemover<V> implements FutureListener<V> {
+
+      private final EventExecutorTimer timer;
+      private final int id;
+
+      TimeoutRemover(EventExecutorTimer timer, int id) {
+        this.timer = timer;
+        this.id = id;
+      }
+
+      @Override
+      public void operationComplete(Future<V> future) {
+        timer.removeTimeout(id);
+      }
     }
   }
 }
