@@ -16,7 +16,6 @@
 package io.gambusia.mqtt.handler;
 
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.IntBinaryOperator;
 
 public final class MqttPacketId {
 
@@ -38,11 +37,15 @@ public final class MqttPacketId {
   }
 
   public int getAndIncrement() {
-    return id.getAndAccumulate(1, ACCUMULATOR);
+    int prev, next;
+    do {
+      next = (prev = id.get()) + 1 & 0x0000ffff;
+    } while (!id.compareAndSet(prev, next == 0 ? 1 : next));
+    return prev;
   }
 
-  private static final IntBinaryOperator ACCUMULATOR = (now, delta) -> {
-    int increment = now + delta & 0x0000ffff;
-    return increment == 0 ? 1 : increment;
-  };
+  @Override
+  public String toString() {
+    return id.toString();
+  }
 }
