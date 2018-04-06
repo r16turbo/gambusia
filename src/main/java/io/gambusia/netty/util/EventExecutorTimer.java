@@ -54,16 +54,13 @@ public class EventExecutorTimer implements Timer {
   @Override
   public Set<Timeout> stop() {
     this.stopped = true;
-
     final Set<Timeout> unfinished;
     synchronized (timeouts) {
       unfinished = new HashSet<>(timeouts.values());
     }
-
     for (Timeout timeout : unfinished) {
       timeout.cancel();
     }
-
     return unfinished;
   }
 
