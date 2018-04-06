@@ -85,9 +85,7 @@ public class MqttClientHandler extends ChannelDuplexHandler {
 
   private Timeout keepAlive = null;
   private long lastWriteTimeNanos = 0;
-  private final ChannelFutureListener writeListener = f -> {
-    lastWriteTimeNanos = System.nanoTime();
-  };
+  private final ChannelFutureListener writeListener = new LastWriteTimeUpdater();
 
   private final MqttPacketId publishId;
   private final MqttPacketId subscribeId = new MqttPacketId();
@@ -608,6 +606,13 @@ public class MqttClientHandler extends ChannelDuplexHandler {
     }
     promise.addListener(f -> timeout.cancel());
     return promise;
+  }
+
+  private class LastWriteTimeUpdater implements ChannelFutureListener {
+    @Override
+    public void operationComplete(ChannelFuture future) throws Exception {
+      lastWriteTimeNanos = System.nanoTime();
+    }
   }
 
   private class KeepAliveTask implements TimerTask {
