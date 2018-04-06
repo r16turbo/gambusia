@@ -39,8 +39,8 @@ public final class MqttPacketId {
   public int getAndIncrement() {
     int prev, next;
     do {
-      next = (prev = id.get()) + 1 & 0x0000ffff;
-    } while (!id.compareAndSet(prev, next == 0 ? 1 : next));
+      next = (prev = id.get()) >= 0xFFFF ? 1 : prev + 1;
+    } while (!id.compareAndSet(prev, next));
     return prev;
   }
 
