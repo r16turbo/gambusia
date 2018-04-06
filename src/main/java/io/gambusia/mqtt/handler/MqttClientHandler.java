@@ -615,7 +615,7 @@ public class MqttClientHandler extends ChannelDuplexHandler {
     }
   }
 
-  private class KeepAliveTask implements TimerTask {
+  private class KeepAliveTask implements TimerTask, FutureListener<Void> {
 
     private final ChannelHandlerContext ctx;
     private final long delay;
@@ -635,12 +635,15 @@ public class MqttClientHandler extends ChannelDuplexHandler {
       } else {
         keepAlive = timeout.timer().newTimeout(this, delay, unit);
 
-        Promise<Void> ping = new MqttPingPromise(ctx.executor()).addListener(f -> {
-          if (!f.isSuccess()) {
-            ctx.fireExceptionCaught(f.cause()).close();
-          }
-        });
+        Promise<Void> ping = new MqttPingPromise(ctx.executor()).addListener(this);
         ctx.channel().writeAndFlush(ping).addListener(new PromiseCanceller<>(ping, true));
+      }
+    }
+
+    @Override
+    public void operationComplete(Future<Void> future) throws Exception {
+      if (!future.isSuccess()) {
+        ctx.fireExceptionCaught(future.cause()).close();
       }
     }
   }
