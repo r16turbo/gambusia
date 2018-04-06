@@ -132,10 +132,6 @@ public class MqttClientHandler extends ChannelDuplexHandler {
     return connectPromise != null && connectPromise.isSuccess();
   }
 
-  public int publishId() {
-    return publishId.get();
-  }
-
   @Override
   public void channelRegistered(ChannelHandlerContext ctx) throws Exception {
     if (timer == null) {
