@@ -604,7 +604,7 @@ public class MqttClientHandler extends ChannelDuplexHandler {
     } else {
       timeout = timer.newTimeout(promise, this.defaultTimeout, this.defaultTimeunit);
     }
-    promise.addListener(f -> timeout.cancel());
+    promise.addListener(new TimeoutCanceller<>(timeout));
     return promise;
   }
 
@@ -642,6 +642,20 @@ public class MqttClientHandler extends ChannelDuplexHandler {
         });
         ctx.channel().writeAndFlush(ping).addListener(new PromiseCanceller<>(ping, true));
       }
+    }
+  }
+
+  private static class TimeoutCanceller<V> implements FutureListener<V> {
+
+    private final Timeout timeout;
+
+    public TimeoutCanceller(Timeout timeout) {
+      this.timeout = timeout;
+    }
+
+    @Override
+    public void operationComplete(Future<V> future) throws Exception {
+      timeout.cancel();
     }
   }
 
