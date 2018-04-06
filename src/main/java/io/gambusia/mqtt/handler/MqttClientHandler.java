@@ -20,15 +20,18 @@ import static io.gambusia.netty.util.Args.*;
 import java.nio.channels.AlreadyConnectedException;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.NotYetConnectedException;
+import java.util.ArrayList;
 import java.util.LinkedList;
+import java.util.List;
+import java.util.ListIterator;
 import java.util.Queue;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 import io.gambusia.mqtt.MqttArticle;
 import io.gambusia.mqtt.MqttConnectResult;
 import io.gambusia.mqtt.MqttPublication;
 import io.gambusia.mqtt.MqttSubscriber;
+import io.gambusia.mqtt.MqttSubscription;
 import io.gambusia.mqtt.handler.promise.MqttConnectPromise;
 import io.gambusia.mqtt.handler.promise.MqttPingPromise;
 import io.gambusia.mqtt.handler.promise.MqttPubRecPromise;
@@ -484,15 +487,17 @@ public class MqttClientHandler extends ChannelDuplexHandler {
         promise.addListener(new PromiseRemover<>(subscribePromises, packetId, promise));
         // channel(cancel, failure) -> promise
         channel.addListener(new PromiseCanceller<>(promise, true));
-        // create mqtt message
-        message = new MqttSubscribeMessage(
-            SUBSCRIBE_HEADER,
-            MqttMessageIdVariableHeader.from(packetId),
-            new MqttSubscribePayload(msg.subscriptions().stream()
-                .map(subscription -> new MqttTopicSubscription(
-                    subscription.topicFilter(),
-                    subscription.qos()))
-                .collect(Collectors.toList())));
+        { // create mqtt message
+          List<MqttTopicSubscription> subscriptions = new ArrayList<>(msg.subscriptions().size());
+          for (MqttSubscription subscription : msg.subscriptions()) {
+            subscriptions.add(new MqttTopicSubscription(
+                subscription.topicFilter(), subscription.qos()));
+          }
+          message = new MqttSubscribeMessage(
+              SUBSCRIBE_HEADER,
+              MqttMessageIdVariableHeader.from(packetId),
+              new MqttSubscribePayload(subscriptions));
+        }
         subscribePromises.put(packetId, promise);
         writeAndTouch(ctx, message, channel);
       }
@@ -509,8 +514,12 @@ public class MqttClientHandler extends ChannelDuplexHandler {
       if (promise == null) {
         ctx.fireExceptionCaught(new MqttUnknownIdException(MqttMessageType.SUBACK, packetId));
       } else {
-        promise.trySuccess(payload.grantedQoSLevels().stream()
-            .map(MqttQoS::valueOf).toArray(MqttQoS[]::new));
+        MqttQoS[] qosLevels = new MqttQoS[payload.grantedQoSLevels().size()];
+        ListIterator<Integer> iterator = payload.grantedQoSLevels().listIterator();
+        while (iterator.hasNext()) {
+          qosLevels[iterator.nextIndex()] = MqttQoS.valueOf(iterator.next());
+        }
+        promise.trySuccess(qosLevels);
       }
     }
   }
