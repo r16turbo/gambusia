@@ -23,7 +23,6 @@ import java.nio.channels.NotYetConnectedException;
 import java.util.LinkedList;
 import java.util.Queue;
 import java.util.concurrent.TimeUnit;
-import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import io.gambusia.mqtt.MqttArticle;
@@ -148,11 +147,11 @@ public class MqttClientHandler extends ChannelDuplexHandler {
     { // mark a promises as failure.
       PromiseBreaker breaker = new PromiseBreaker(new ClosedChannelException());
       breaker.accept(connectPromise);
-      publishPromises.forEach(breaker);
-      releasePromises.forEach(breaker);
-      receivePromises.forEach(breaker);
-      subscribePromises.forEach(breaker);
-      unsubscribePromises.forEach(breaker);
+      publishPromises.values().forEach(breaker);
+      releasePromises.values().forEach(breaker);
+      receivePromises.values().forEach(breaker);
+      subscribePromises.values().forEach(breaker);
+      unsubscribePromises.values().forEach(breaker);
       pingPromises.forEach(breaker);
     }
     ctx.fireChannelInactive();
@@ -639,8 +638,7 @@ public class MqttClientHandler extends ChannelDuplexHandler {
     }
   }
 
-  private class PromiseBreaker implements
-      Consumer<Promise<?>>, BiConsumer<Integer, Promise<?>> {
+  private class PromiseBreaker implements Consumer<Promise<?>> {
 
     private final Throwable cause;
 
@@ -650,13 +648,6 @@ public class MqttClientHandler extends ChannelDuplexHandler {
 
     @Override
     public void accept(Promise<?> p) {
-      if (p != null && !p.isDone()) {
-        p.tryFailure(cause);
-      }
-    }
-
-    @Override
-    public void accept(Integer id, Promise<?> p) {
       if (p != null && !p.isDone()) {
         p.tryFailure(cause);
       }
