@@ -71,6 +71,8 @@ import io.netty.util.Timer;
 import io.netty.util.TimerTask;
 import io.netty.util.collection.IntObjectHashMap;
 import io.netty.util.collection.IntObjectMap;
+import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.FutureListener;
 import io.netty.util.concurrent.Promise;
 import io.netty.util.concurrent.PromiseNotifier;
 
@@ -325,7 +327,7 @@ public class MqttClientHandler extends ChannelDuplexHandler {
           // QoS 1,2
           payload = article.payload().retain();
           promise = embedTimeLimit(msg);
-          promise.addListener(f -> publishPromises.remove(packetId, promise));
+          promise.addListener(new PromiseRemover<>(publishPromises, packetId, promise));
           // channel(cancel, failure) -> promise
           channel.addListener(new PromiseCanceller<>(promise, true));
           publishPromises.put(packetId, promise);
@@ -481,7 +483,7 @@ public class MqttClientHandler extends ChannelDuplexHandler {
       } else {
         final Promise<MqttQoS[]> promise = embedTimeLimit(msg);
         final MqttSubscribeMessage message;
-        promise.addListener(f -> subscribePromises.remove(packetId, promise));
+        promise.addListener(new PromiseRemover<>(subscribePromises, packetId, promise));
         // channel(cancel, failure) -> promise
         channel.addListener(new PromiseCanceller<>(promise, true));
         // create mqtt message
@@ -527,7 +529,7 @@ public class MqttClientHandler extends ChannelDuplexHandler {
       } else {
         final Promise<Void> promise = embedTimeLimit(msg);
         final MqttUnsubscribeMessage message;
-        promise.addListener(f -> unsubscribePromises.remove(packetId, promise));
+        promise.addListener(new PromiseRemover<>(unsubscribePromises, packetId, promise));
         // channel(cancel, failure) -> promise
         channel.addListener(new PromiseCanceller<>(promise, true));
         // create mqtt message
@@ -638,7 +640,7 @@ public class MqttClientHandler extends ChannelDuplexHandler {
     }
   }
 
-  private class PromiseBreaker implements Consumer<Promise<?>> {
+  private static class PromiseBreaker implements Consumer<Promise<?>> {
 
     private final Throwable cause;
 
@@ -647,9 +649,29 @@ public class MqttClientHandler extends ChannelDuplexHandler {
     }
 
     @Override
-    public void accept(Promise<?> p) {
-      if (p != null && !p.isDone()) {
-        p.tryFailure(cause);
+    public void accept(Promise<?> promise) {
+      if (promise != null && !promise.isDone()) {
+        promise.tryFailure(cause);
+      }
+    }
+  }
+
+  private static class PromiseRemover<V, P extends Promise<?>> implements FutureListener<V> {
+
+    private final IntObjectMap<P> promises;
+    private final int packetId;
+    private final P promise;
+
+    public PromiseRemover(IntObjectMap<P> promises, int packetId, P promise) {
+      this.promises = promises;
+      this.packetId = packetId;
+      this.promise = promise;
+    }
+
+    @Override
+    public void operationComplete(Future<V> future) throws Exception {
+      if (this.promise == promises.get(packetId)) {
+        promises.remove(packetId);
       }
     }
   }
