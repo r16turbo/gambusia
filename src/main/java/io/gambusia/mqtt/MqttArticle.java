@@ -16,10 +16,8 @@
 package io.gambusia.mqtt;
 
 import static io.gambusia.netty.util.Args.*;
-import java.nio.ByteBuffer;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufHolder;
-import io.netty.buffer.Unpooled;
 import io.netty.handler.codec.mqtt.MqttQoS;
 import io.netty.util.IllegalReferenceCountException;
 
@@ -29,14 +27,6 @@ public class MqttArticle implements ByteBufHolder {
   private final boolean retain;
   private final String topic;
   private final ByteBuf payload;
-
-  public MqttArticle(MqttQoS qos, boolean retain, String topic, byte[] payload) {
-    this(qos, retain, topic, Unpooled.wrappedBuffer(payload));
-  }
-
-  public MqttArticle(MqttQoS qos, boolean retain, String topic, ByteBuffer payload) {
-    this(qos, retain, topic, Unpooled.wrappedBuffer(payload));
-  }
 
   public MqttArticle(MqttQoS qos, boolean retain, String topic, ByteBuf payload) {
     this.qos = checkNotNull(qos, "qos");

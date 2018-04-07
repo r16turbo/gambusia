@@ -16,7 +16,6 @@
 package io.gambusia.mqtt;
 
 import static io.gambusia.mqtt.handler.MqttFixedHeaders.*;
-import java.nio.ByteBuffer;
 import java.util.concurrent.TimeUnit;
 import io.gambusia.mqtt.handler.promise.MqttConnectPromise;
 import io.gambusia.mqtt.handler.promise.MqttPingPromise;
@@ -119,25 +118,6 @@ public class MqttAsyncClient {
         cleanSession, keepAlive, clientId, will, username, password, pingInterval, pingTimeunit));
   }
 
-  // publish QoS 0
-  public MqttPublishFuture publish0(boolean retain, String topic, byte[] payload) {
-    return publish(MqttQoS.AT_MOST_ONCE, retain, topic, payload);
-  }
-
-  public MqttPublishFuture publish0(boolean retain, String topic, byte[] payload,
-      long timeout, TimeUnit unit) {
-    return publish(MqttQoS.AT_MOST_ONCE, retain, topic, payload, timeout, unit);
-  }
-
-  public MqttPublishFuture publish0(boolean retain, String topic, ByteBuffer payload) {
-    return publish(MqttQoS.AT_MOST_ONCE, retain, topic, payload);
-  }
-
-  public MqttPublishFuture publish0(boolean retain, String topic, ByteBuffer payload,
-      long timeout, TimeUnit unit) {
-    return publish(MqttQoS.AT_MOST_ONCE, retain, topic, payload, timeout, unit);
-  }
-
   public MqttPublishFuture publish0(boolean retain, String topic, ByteBuf payload) {
     return publish(MqttQoS.AT_MOST_ONCE, retain, topic, payload);
   }
@@ -145,25 +125,6 @@ public class MqttAsyncClient {
   public MqttPublishFuture publish0(boolean retain, String topic, ByteBuf payload,
       long timeout, TimeUnit unit) {
     return publish(MqttQoS.AT_MOST_ONCE, retain, topic, payload, timeout, unit);
-  }
-
-  // publish QoS 1
-  public MqttPublishFuture publish1(boolean retain, String topic, byte[] payload) {
-    return publish(MqttQoS.AT_LEAST_ONCE, retain, topic, payload);
-  }
-
-  public MqttPublishFuture publish1(boolean retain, String topic, byte[] payload,
-      long timeout, TimeUnit unit) {
-    return publish(MqttQoS.AT_LEAST_ONCE, retain, topic, payload, timeout, unit);
-  }
-
-  public MqttPublishFuture publish1(boolean retain, String topic, ByteBuffer payload) {
-    return publish(MqttQoS.AT_LEAST_ONCE, retain, topic, payload);
-  }
-
-  public MqttPublishFuture publish1(boolean retain, String topic, ByteBuffer payload,
-      long timeout, TimeUnit unit) {
-    return publish(MqttQoS.AT_LEAST_ONCE, retain, topic, payload, timeout, unit);
   }
 
   public MqttPublishFuture publish1(boolean retain, String topic, ByteBuf payload) {
@@ -175,25 +136,6 @@ public class MqttAsyncClient {
     return publish(MqttQoS.AT_LEAST_ONCE, retain, topic, payload, timeout, unit);
   }
 
-  // publish QoS 2
-  public MqttPublishFuture publish2(boolean retain, String topic, byte[] payload) {
-    return publish(MqttQoS.EXACTLY_ONCE, retain, topic, payload);
-  }
-
-  public MqttPublishFuture publish2(boolean retain, String topic, byte[] payload,
-      long timeout, TimeUnit unit) {
-    return publish(MqttQoS.EXACTLY_ONCE, retain, topic, payload, timeout, unit);
-  }
-
-  public MqttPublishFuture publish2(boolean retain, String topic, ByteBuffer payload) {
-    return publish(MqttQoS.EXACTLY_ONCE, retain, topic, payload);
-  }
-
-  public MqttPublishFuture publish2(boolean retain, String topic, ByteBuffer payload,
-      long timeout, TimeUnit unit) {
-    return publish(MqttQoS.EXACTLY_ONCE, retain, topic, payload, timeout, unit);
-  }
-
   public MqttPublishFuture publish2(boolean retain, String topic, ByteBuf payload) {
     return publish(MqttQoS.EXACTLY_ONCE, retain, topic, payload);
   }
@@ -203,36 +145,11 @@ public class MqttAsyncClient {
     return publish(MqttQoS.EXACTLY_ONCE, retain, topic, payload, timeout, unit);
   }
 
-  // publish QoS any
-  public MqttPublishFuture publish(MqttQoS qos, boolean retain, String topic,
-      byte[] payload) {
+  public MqttPublishFuture publish(MqttQoS qos, boolean retain, String topic, ByteBuf payload) {
     return publish(new MqttArticle(qos, retain, topic, payload));
   }
 
-  public MqttPublishFuture publish(MqttQoS qos, boolean retain, String topic,
-      byte[] payload,
-      long timeout, TimeUnit unit) {
-    return publish(new MqttArticle(qos, retain, topic, payload), timeout, unit);
-  }
-
-  public MqttPublishFuture publish(MqttQoS qos, boolean retain, String topic,
-      ByteBuffer payload) {
-    return publish(new MqttArticle(qos, retain, topic, payload));
-  }
-
-  public MqttPublishFuture publish(MqttQoS qos, boolean retain, String topic,
-      ByteBuffer payload,
-      long timeout, TimeUnit unit) {
-    return publish(new MqttArticle(qos, retain, topic, payload), timeout, unit);
-  }
-
-  public MqttPublishFuture publish(MqttQoS qos, boolean retain, String topic,
-      ByteBuf payload) {
-    return publish(new MqttArticle(qos, retain, topic, payload));
-  }
-
-  public MqttPublishFuture publish(MqttQoS qos, boolean retain, String topic,
-      ByteBuf payload,
+  public MqttPublishFuture publish(MqttQoS qos, boolean retain, String topic, ByteBuf payload,
       long timeout, TimeUnit unit) {
     return publish(new MqttArticle(qos, retain, topic, payload), timeout, unit);
   }
