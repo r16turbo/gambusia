@@ -677,7 +677,7 @@ public class MqttClientHandler extends ChannelDuplexHandler {
 
     @Override
     public void accept(Promise<?> promise) {
-      if (promise != null && !promise.isDone()) {
+      if (promise != null) {
         promise.tryFailure(cause);
       }
     }
@@ -697,7 +697,7 @@ public class MqttClientHandler extends ChannelDuplexHandler {
 
     @Override
     public void operationComplete(Future<V> future) throws Exception {
-      if (this.promise == promises.get(packetId)) {
+      if (!future.isSuccess() && this.promise == promises.get(packetId)) {
         promises.remove(packetId);
       }
     }
