@@ -266,6 +266,10 @@ public class MqttClientHandler extends ChannelDuplexHandler {
       final MqttConnAckVariableHeader variableHeader = msg.variableHeader();
       final MqttConnectReturnCode returnCode = variableHeader.connectReturnCode();
       if (returnCode == MqttConnectReturnCode.CONNECTION_ACCEPTED) {
+        MqttArticle will = connectPromise.will();
+        if (will != null) {
+          will.release();
+        }
         connectPromise.trySuccess(new MqttConnectResult(
             variableHeader.isSessionPresent(), returnCode.byteValue()));
         startKeepAlive(ctx, connectPromise.pingInterval(), connectPromise.pingTimeunit());
