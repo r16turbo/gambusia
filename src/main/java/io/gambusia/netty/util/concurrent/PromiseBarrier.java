@@ -17,7 +17,6 @@ package io.gambusia.netty.util.concurrent;
 
 import static io.gambusia.netty.util.Args.*;
 import static io.netty.util.internal.logging.InternalLoggerFactory.*;
-import java.util.concurrent.CancellationException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import io.netty.util.concurrent.Future;
@@ -59,11 +58,7 @@ public class PromiseBarrier<V> implements GenericFutureListener<Future<V>> {
 
   @Override
   public void operationComplete(Future<V> future) throws Exception {
-    if (future.isSuccess()) {
-      // noop
-    } else if (future.isCancelled()) {
-      cause.compareAndSet(null, new CancellationException());
-    } else {
+    if (!future.isSuccess()) {
       cause.compareAndSet(null, future.cause());
     }
     if (count.decrementAndGet() <= 0 && !promise.isDone()) {
