@@ -233,7 +233,7 @@ public class MqttClientHandler extends ChannelDuplexHandler {
       final MqttConnectMessage message;
       connectPromise = embedTimeLimit(msg);
       // channel(cancel, failure) -> promise
-      channel.addListener(new PromiseCanceller<>(connectPromise, true));
+      channel.addListener(new PromiseCanceller<>(connectPromise));
       { // create mqtt message
         MqttArticle will = msg.will();
         boolean hasWill = will != null;
@@ -333,7 +333,7 @@ public class MqttClientHandler extends ChannelDuplexHandler {
           promise = embedTimeLimit(msg);
           promise.addListener(new PromiseRemover<>(publishPromises, packetId, promise));
           // channel(cancel, failure) -> promise
-          channel.addListener(new PromiseCanceller<>(promise, true));
+          channel.addListener(new PromiseCanceller<>(promise));
           publishPromises.put(packetId, promise);
         }
         { // create mqtt message
@@ -407,7 +407,7 @@ public class MqttClientHandler extends ChannelDuplexHandler {
         final Promise<Void> promise = embedTimeLimit(msg);
         final MqttMessage message;
         // channel(cancel, failure) -> promise
-        channel.addListener(new PromiseCanceller<>(promise, true));
+        channel.addListener(new PromiseCanceller<>(promise));
         // create mqtt message
         message = new MqttMessage(PUBREL_HEADER, MqttMessageIdVariableHeader.from(packetId));
         releasePromises.put(packetId, promise);
@@ -452,7 +452,7 @@ public class MqttClientHandler extends ChannelDuplexHandler {
         final Promise<Void> promise = embedTimeLimit(msg);
         final MqttMessage message;
         // channel(cancel, failure) -> promise
-        channel.addListener(new PromiseCanceller<>(promise, true));
+        channel.addListener(new PromiseCanceller<>(promise));
         // create mqtt message
         message = new MqttMessage(PUBREC_HEADER, MqttMessageIdVariableHeader.from(packetId));
         receivePromises.put(packetId, promise);
@@ -489,7 +489,7 @@ public class MqttClientHandler extends ChannelDuplexHandler {
         final MqttSubscribeMessage message;
         promise.addListener(new PromiseRemover<>(subscribePromises, packetId, promise));
         // channel(cancel, failure) -> promise
-        channel.addListener(new PromiseCanceller<>(promise, true));
+        channel.addListener(new PromiseCanceller<>(promise));
         { // create mqtt message
           List<MqttTopicSubscription> subscriptions = new ArrayList<>(msg.subscriptions().size());
           for (MqttSubscription subscription : msg.subscriptions()) {
@@ -541,7 +541,7 @@ public class MqttClientHandler extends ChannelDuplexHandler {
         final MqttUnsubscribeMessage message;
         promise.addListener(new PromiseRemover<>(unsubscribePromises, packetId, promise));
         // channel(cancel, failure) -> promise
-        channel.addListener(new PromiseCanceller<>(promise, true));
+        channel.addListener(new PromiseCanceller<>(promise));
         // create mqtt message
         message = new MqttUnsubscribeMessage(
             UNSUBSCRIBE_HEADER,
@@ -584,7 +584,7 @@ public class MqttClientHandler extends ChannelDuplexHandler {
       final MqttMessage message;
       promise.addListener(new PromiseQueueRemover<>(pingPromises));
       // channel(cancel, failure) -> promise
-      channel.addListener(new PromiseCanceller<>(promise, true));
+      channel.addListener(new PromiseCanceller<>(promise));
       // create mqtt message
       message = new MqttMessage(PINGREQ_HEADER);
       pingPromises.add(promise);
@@ -649,7 +649,7 @@ public class MqttClientHandler extends ChannelDuplexHandler {
         keepAlive = timeout.timer().newTimeout(this, delay, unit);
 
         Promise<Void> ping = new MqttPingPromise(ctx.executor()).addListener(this);
-        ctx.channel().writeAndFlush(ping).addListener(new PromiseCanceller<>(ping, true));
+        ctx.channel().writeAndFlush(ping).addListener(new PromiseCanceller<>(ping));
       }
     }
 

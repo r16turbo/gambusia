@@ -27,20 +27,14 @@ public class PromiseCanceller<V> implements GenericFutureListener<Future<V>> {
   private static final InternalLogger logger = getInstance(PromiseCanceller.class);
 
   private final Promise<?> promise;
-  private final boolean failure;
   private final boolean mayInterruptIfRunning;
 
   public PromiseCanceller(Promise<?> promise) {
     this(promise, false);
   }
 
-  public PromiseCanceller(Promise<?> promise, boolean failure) {
-    this(promise, failure, false);
-  }
-
-  public PromiseCanceller(Promise<?> promise, boolean failure, boolean mayInterruptIfRunning) {
+  public PromiseCanceller(Promise<?> promise, boolean mayInterruptIfRunning) {
     this.promise = checkNotNull(promise, "promise");
-    this.failure = failure;
     this.mayInterruptIfRunning = mayInterruptIfRunning;
   }
 
@@ -52,7 +46,7 @@ public class PromiseCanceller<V> implements GenericFutureListener<Future<V>> {
       if (!promise.cancel(mayInterruptIfRunning)) {
         logger.warn("failed to cancel promise.");
       }
-    } else if (failure) {
+    } else {
       try {
         promise.setFailure(future.cause());
       } catch (IllegalStateException e) {

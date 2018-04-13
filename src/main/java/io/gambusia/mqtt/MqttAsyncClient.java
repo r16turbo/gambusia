@@ -244,7 +244,7 @@ public class MqttAsyncClient {
   }
 
   protected <P extends Promise<V>, V> P writeAndFlush(P promise) {
-    channel().writeAndFlush(promise).addListener(new PromiseCanceller<>(promise, true));
+    channel().writeAndFlush(promise).addListener(new PromiseCanceller<>(promise));
     return promise;
   }
 }
