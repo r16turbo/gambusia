@@ -26,12 +26,15 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Queue;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Consumer;
 import io.gambusia.mqtt.MqttArticle;
 import io.gambusia.mqtt.MqttConnectResult;
 import io.gambusia.mqtt.MqttPublication;
 import io.gambusia.mqtt.MqttSubscriber;
 import io.gambusia.mqtt.MqttSubscription;
+import io.gambusia.mqtt.handler.internal.PromiseBreaker;
+import io.gambusia.mqtt.handler.internal.PromiseQueueRemover;
+import io.gambusia.mqtt.handler.internal.PromiseRemover;
+import io.gambusia.mqtt.handler.internal.TimeoutCanceller;
 import io.gambusia.mqtt.handler.promise.MqttConnectPromise;
 import io.gambusia.mqtt.handler.promise.MqttPingPromise;
 import io.gambusia.mqtt.handler.promise.MqttPubRecPromise;
@@ -654,72 +657,6 @@ public class MqttClientHandler extends ChannelDuplexHandler {
     public void operationComplete(Future<Void> future) throws Exception {
       if (!future.isSuccess()) {
         ctx.fireExceptionCaught(future.cause()).close();
-      }
-    }
-  }
-
-  private static class TimeoutCanceller<V> implements FutureListener<V> {
-
-    private final Timeout timeout;
-
-    public TimeoutCanceller(Timeout timeout) {
-      this.timeout = timeout;
-    }
-
-    @Override
-    public void operationComplete(Future<V> future) throws Exception {
-      timeout.cancel();
-    }
-  }
-
-  private static class PromiseBreaker implements Consumer<Promise<?>> {
-
-    private final Throwable cause;
-
-    public PromiseBreaker(Throwable cause) {
-      this.cause = cause;
-    }
-
-    @Override
-    public void accept(Promise<?> promise) {
-      if (promise != null) {
-        promise.tryFailure(cause);
-      }
-    }
-  }
-
-  private static class PromiseRemover<V, P extends Promise<?>> implements FutureListener<V> {
-
-    private final IntObjectMap<P> promises;
-    private final int packetId;
-    private final P promise;
-
-    public PromiseRemover(IntObjectMap<P> promises, int packetId, P promise) {
-      this.promises = promises;
-      this.packetId = packetId;
-      this.promise = promise;
-    }
-
-    @Override
-    public void operationComplete(Future<V> future) throws Exception {
-      if (!future.isSuccess() && this.promise == promises.get(packetId)) {
-        promises.remove(packetId);
-      }
-    }
-  }
-
-  private static class PromiseQueueRemover<V, P extends Promise<?>> implements FutureListener<V> {
-
-    private final Queue<P> promises;
-
-    public PromiseQueueRemover(Queue<P> promises) {
-      this.promises = promises;
-    }
-
-    @Override
-    public void operationComplete(Future<V> future) throws Exception {
-      if (!future.isSuccess()) {
-        promises.poll();
       }
     }
   }
