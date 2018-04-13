@@ -579,7 +579,7 @@ public class MqttClientHandler extends ChannelDuplexHandler {
     } else {
       final Promise<Void> promise = embedTimeLimit(msg);
       final MqttMessage message;
-      promise.addListener(new PingRemover<>(pingPromises));
+      promise.addListener(new PromiseQueueRemover<>(pingPromises));
       // channel(cancel, failure) -> promise
       channel.addListener(new PromiseCanceller<>(promise, true));
       // create mqtt message
@@ -708,11 +708,11 @@ public class MqttClientHandler extends ChannelDuplexHandler {
     }
   }
 
-  private static class PingRemover<V, P extends Promise<?>> implements FutureListener<V> {
+  private static class PromiseQueueRemover<V, P extends Promise<?>> implements FutureListener<V> {
 
     private final Queue<P> promises;
 
-    public PingRemover(Queue<P> promises) {
+    public PromiseQueueRemover(Queue<P> promises) {
       this.promises = promises;
     }
 
