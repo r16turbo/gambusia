@@ -19,5 +19,5 @@ import io.netty.channel.Channel;
 
 public interface MqttSubscriber {
 
-  void arrived(Channel ch, MqttPublication publication) throws Exception;
+  void arrived(Channel channel, MqttPublication publication) throws Exception;
 }
