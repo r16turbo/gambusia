@@ -24,29 +24,16 @@ import io.netty.handler.codec.mqtt.MqttQoS;
 import io.netty.util.Timeout;
 import io.netty.util.concurrent.EventExecutor;
 
-public class MqttPublishPromise extends MqttTimeLimitPromise<Void> implements MqttPublishFuture {
+public class MqttPublishPromise extends MqttPromise<Void> implements MqttPublishFuture {
 
   private final MqttArticle article;
   private final boolean duplicate;
 
   private int packetId;
 
-  public MqttPublishPromise(EventExecutor executor, MqttArticle article) {
-    this(executor, article, 0, 0, null);
-  }
-
-  public MqttPublishPromise(EventExecutor executor, MqttArticle article,
-      long timeout, TimeUnit timeunit) {
-    this(executor, article, 0, timeout, timeunit);
-  }
-
-  public MqttPublishPromise(EventExecutor executor, MqttArticle article, int packetId) {
-    this(executor, article, packetId, 0, null);
-  }
-
-  public MqttPublishPromise(EventExecutor executor, MqttArticle article, int packetId,
-      long timeout, TimeUnit timeunit) {
-    super(executor, timeout, timeunit);
+  public MqttPublishPromise(EventExecutor executor, long timeout, TimeUnit unit,
+      MqttArticle article, int packetId) {
+    super(executor, timeout, unit);
     this.article = checkNotNull(article, "article");
     this.duplicate = packetId > 0;
     this.packetId = packetId;

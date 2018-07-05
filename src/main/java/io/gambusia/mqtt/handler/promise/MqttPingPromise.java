@@ -20,14 +20,10 @@ import java.util.concurrent.TimeoutException;
 import io.netty.util.Timeout;
 import io.netty.util.concurrent.EventExecutor;
 
-public class MqttPingPromise extends MqttTimeLimitPromise<Void> {
+public class MqttPingPromise extends MqttPromise<Void> {
 
-  public MqttPingPromise(EventExecutor executor) {
-    this(executor, 0, null);
-  }
-
-  public MqttPingPromise(EventExecutor executor, long timeout, TimeUnit timeunit) {
-    super(executor, timeout, timeunit);
+  public MqttPingPromise(EventExecutor executor, long timeout, TimeUnit unit) {
+    super(executor, timeout, unit);
   }
 
   @Override

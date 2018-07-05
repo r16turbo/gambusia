@@ -24,7 +24,7 @@ import io.gambusia.mqtt.handler.MqttPinger;
 import io.netty.util.Timeout;
 import io.netty.util.concurrent.EventExecutor;
 
-public class MqttConnectPromise extends MqttTimeLimitPromise<MqttConnectResult> {
+public class MqttConnectPromise extends MqttPromise<MqttConnectResult> {
 
   private final String protocolName;
   private final int protocolLevel;
@@ -36,21 +36,12 @@ public class MqttConnectPromise extends MqttTimeLimitPromise<MqttConnectResult> 
   private final String username;
   private final byte[] password;
 
-  public MqttConnectPromise(EventExecutor executor,
-      String protocolName, int protocolLevel, boolean cleanSession,
-      int keepAlive, MqttPinger pinger,
-      String clientId, MqttArticle will, String username, byte[] password) {
-
-    this(executor, 0, null, protocolName, protocolLevel, cleanSession, keepAlive, pinger,
-        clientId, will, username, password);
-  }
-
-  public MqttConnectPromise(EventExecutor executor, long timeout, TimeUnit timeunit,
+  public MqttConnectPromise(EventExecutor executor, long timeout, TimeUnit unit,
       String protocolName, int protocolLevel,
       boolean cleanSession, int keepAlive, MqttPinger pinger,
       String clientId, MqttArticle will, String username, byte[] password) {
 
-    super(executor, timeout, timeunit);
+    super(executor, timeout, unit);
     this.protocolName = checkNotEmpty(protocolName, "protocolName");
     this.protocolLevel = protocolLevel;
     this.cleanSession = cleanSession;

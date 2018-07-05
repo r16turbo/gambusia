@@ -20,16 +20,12 @@ import java.util.concurrent.TimeoutException;
 import io.netty.util.Timeout;
 import io.netty.util.concurrent.EventExecutor;
 
-public class MqttPubRelPromise extends MqttTimeLimitPromise<Void> {
+public class MqttPubRelPromise extends MqttPromise<Void> {
 
   private final int packetId;
 
-  public MqttPubRelPromise(EventExecutor executor, int packetId) {
-    this(executor, 0, null, packetId);
-  }
-
-  public MqttPubRelPromise(EventExecutor executor, long timeout, TimeUnit timeunit, int packetId) {
-    super(executor, timeout, timeunit);
+  public MqttPubRelPromise(EventExecutor executor, long timeout, TimeUnit unit, int packetId) {
+    super(executor, timeout, unit);
     this.packetId = packetId;
   }
 

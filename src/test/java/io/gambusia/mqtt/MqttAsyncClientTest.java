@@ -108,7 +108,7 @@ class MqttAsyncClientTest {
         ChannelPipeline p = ch.pipeline();
         p.addLast("mqttDecoder", new MqttDecoder());
         p.addLast("mqttEncoder", MqttEncoder.INSTANCE);
-        p.addLast("mqttHandler", new MqttClientHandler(subscriber, TIMEOUT, TIMEUNIT));
+        p.addLast("mqttHandler", new MqttClientHandler(subscriber));
         p.addLast("loggingHandler", new LoggingHandler());
       }
     });
@@ -130,7 +130,7 @@ class MqttAsyncClientTest {
   @Test
   @DisplayName("tcp connect")
   void test000() throws InterruptedException {
-    client = new MqttAsyncClient(b.connect(HOST, PORT).sync().channel());
+    client = new MqttAsyncClient(b.connect(HOST, PORT).sync().channel(), TIMEOUT, TIMEUNIT);
   }
 
   @Test

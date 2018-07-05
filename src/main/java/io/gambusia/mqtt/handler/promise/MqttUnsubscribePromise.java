@@ -24,17 +24,13 @@ import java.util.concurrent.TimeoutException;
 import io.netty.util.Timeout;
 import io.netty.util.concurrent.EventExecutor;
 
-public class MqttUnsubscribePromise extends MqttTimeLimitPromise<Void> {
+public class MqttUnsubscribePromise extends MqttPromise<Void> {
 
   private final List<String> topicFilters;
 
-  public MqttUnsubscribePromise(EventExecutor executor, String... topicFilters) {
-    this(executor, 0, null, topicFilters);
-  }
-
-  public MqttUnsubscribePromise(EventExecutor executor, long timeout, TimeUnit timeunit,
+  public MqttUnsubscribePromise(EventExecutor executor, long timeout, TimeUnit unit,
       String... topicFilters) {
-    super(executor, timeout, timeunit);
+    super(executor, timeout, unit);
     this.topicFilters = Collections.unmodifiableList(
         Arrays.asList(checkNotContainsNull(topicFilters, "topicFilters")));
   }

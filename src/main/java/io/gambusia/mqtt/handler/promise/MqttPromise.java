@@ -15,33 +15,26 @@
  */
 package io.gambusia.mqtt.handler.promise;
 
+import static io.gambusia.netty.util.Args.*;
 import java.util.concurrent.TimeUnit;
+import io.netty.util.Timeout;
+import io.netty.util.Timer;
 import io.netty.util.TimerTask;
 import io.netty.util.concurrent.DefaultPromise;
 import io.netty.util.concurrent.EventExecutor;
 
-public abstract class MqttTimeLimitPromise<V> extends DefaultPromise<V> implements TimerTask {
+public abstract class MqttPromise<V> extends DefaultPromise<V> implements TimerTask {
 
-  private final boolean limited;
   private final long timeout;
-  private final TimeUnit timeunit;
+  private final TimeUnit unit;
 
-  protected MqttTimeLimitPromise(EventExecutor executor, long timeout, TimeUnit timeunit) {
+  protected MqttPromise(EventExecutor executor, long timeout, TimeUnit unit) {
     super(executor);
-    this.limited = timeout > 0 && timeunit != null;
-    this.timeout = limited ? timeout : 0;
-    this.timeunit = limited ? timeunit : null;
+    this.timeout = checkPositive(timeout, "timeout");
+    this.unit = checkNotNull(unit, "unit");
   }
 
-  public boolean isTimeLimited() {
-    return limited;
-  }
-
-  public long timeout() {
-    return timeout;
-  }
-
-  public TimeUnit timeunit() {
-    return timeunit;
+  public Timeout set(Timer timer) {
+    return timer.newTimeout(this, timeout, unit);
   }
 }

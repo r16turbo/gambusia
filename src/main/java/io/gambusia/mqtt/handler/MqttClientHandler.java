@@ -37,11 +37,11 @@ import io.gambusia.mqtt.handler.internal.PromiseRemover;
 import io.gambusia.mqtt.handler.internal.TimeoutCanceller;
 import io.gambusia.mqtt.handler.promise.MqttConnectPromise;
 import io.gambusia.mqtt.handler.promise.MqttPingPromise;
+import io.gambusia.mqtt.handler.promise.MqttPromise;
 import io.gambusia.mqtt.handler.promise.MqttPubRecPromise;
 import io.gambusia.mqtt.handler.promise.MqttPubRelPromise;
 import io.gambusia.mqtt.handler.promise.MqttPublishPromise;
 import io.gambusia.mqtt.handler.promise.MqttSubscribePromise;
-import io.gambusia.mqtt.handler.promise.MqttTimeLimitPromise;
 import io.gambusia.mqtt.handler.promise.MqttUnsubscribePromise;
 import io.gambusia.netty.util.EventExecutorTimer;
 import io.gambusia.netty.util.concurrent.PromiseCanceller;
@@ -85,8 +85,6 @@ import io.netty.util.concurrent.PromiseNotifier;
 public class MqttClientHandler extends ChannelDuplexHandler {
 
   private final MqttSubscriber subscriber;
-  private final long defaultTimeout;
-  private final TimeUnit defaultTimeunit;
   private Timer timer;
 
   private Timeout keepAlive = null;
@@ -105,29 +103,21 @@ public class MqttClientHandler extends ChannelDuplexHandler {
   private final IntObjectMap<Promise<Void>> unsubscribePromises = new IntObjectHashMap<>();
   private final Queue<Promise<Void>> pingPromises = new LinkedList<>();
 
-  public MqttClientHandler(MqttSubscriber subscriber,
-      long defaultTimeout, TimeUnit defaultTimeunit) {
-    this(subscriber, new MqttPacketId(), defaultTimeout, defaultTimeunit, null);
+  public MqttClientHandler(MqttSubscriber subscriber) {
+    this(subscriber, new MqttPacketId(), null);
   }
 
-  public MqttClientHandler(MqttSubscriber subscriber,
-      long defaultTimeout, TimeUnit defaultTimeunit, Timer timer) {
-    this(subscriber, new MqttPacketId(), defaultTimeout, defaultTimeunit, timer);
+  public MqttClientHandler(MqttSubscriber subscriber, Timer timer) {
+    this(subscriber, new MqttPacketId(), timer);
   }
 
-  public MqttClientHandler(MqttSubscriber subscriber, MqttPacketId publishId,
-      long defaultTimeout, TimeUnit defaultTimeunit) {
-    this(subscriber, publishId, defaultTimeout, defaultTimeunit, null);
+  public MqttClientHandler(MqttSubscriber subscriber, MqttPacketId publishId) {
+    this(subscriber, publishId, null);
   }
 
-  public MqttClientHandler(MqttSubscriber subscriber, MqttPacketId publishId,
-      long defaultTimeout, TimeUnit defaultTimeunit, Timer timer) {
-
+  public MqttClientHandler(MqttSubscriber subscriber, MqttPacketId publishId, Timer timer) {
     this.subscriber = checkNotNull(subscriber, "subscriber");
     this.publishId = checkNotNull(publishId, "publishId");
-    this.defaultTimeout = checkPositive(defaultTimeout, "defaultTimeout");
-    this.defaultTimeunit = checkNotNull(defaultTimeunit, "defaultTimeunit");
-
     this.timer = timer;
   }
 
@@ -231,7 +221,7 @@ public class MqttClientHandler extends ChannelDuplexHandler {
       msg.setFailure(new AlreadyConnectedException());
     } else {
       final MqttConnectMessage message;
-      connectPromise = embedTimeLimit(msg);
+      connectPromise = setTimer(msg);
       // channel(cancel, failure) -> promise
       channel.addListener(new PromiseCanceller<>(connectPromise));
       { // create mqtt message
@@ -331,7 +321,7 @@ public class MqttClientHandler extends ChannelDuplexHandler {
         } else {
           // QoS 1,2
           payload = article.payload().retain();
-          promise = embedTimeLimit(msg);
+          promise = setTimer(msg);
           promise.addListener(new PromiseRemover<>(publishPromises, packetId, promise));
           // channel(cancel, failure) -> promise
           channel.addListener(new PromiseCanceller<>(promise));
@@ -405,7 +395,7 @@ public class MqttClientHandler extends ChannelDuplexHandler {
       if (releasePromises.containsKey(packetId)) {
         msg.setFailure(new MqttDuplicateIdException(MqttMessageType.PUBREL, packetId));
       } else {
-        final Promise<Void> promise = embedTimeLimit(msg);
+        final Promise<Void> promise = setTimer(msg);
         final MqttMessage message;
         // channel(cancel, failure) -> promise
         channel.addListener(new PromiseCanceller<>(promise));
@@ -450,7 +440,7 @@ public class MqttClientHandler extends ChannelDuplexHandler {
       if (receivePromises.containsKey(packetId)) {
         msg.setFailure(new MqttDuplicateIdException(MqttMessageType.PUBREC, packetId));
       } else {
-        final Promise<Void> promise = embedTimeLimit(msg);
+        final Promise<Void> promise = setTimer(msg);
         final MqttMessage message;
         // channel(cancel, failure) -> promise
         channel.addListener(new PromiseCanceller<>(promise));
@@ -486,7 +476,7 @@ public class MqttClientHandler extends ChannelDuplexHandler {
       if (subscribePromises.containsKey(packetId)) {
         msg.setFailure(new MqttDuplicateIdException(MqttMessageType.SUBSCRIBE, packetId));
       } else {
-        final Promise<MqttQoS[]> promise = embedTimeLimit(msg);
+        final Promise<MqttQoS[]> promise = setTimer(msg);
         final MqttSubscribeMessage message;
         promise.addListener(new PromiseRemover<>(subscribePromises, packetId, promise));
         // channel(cancel, failure) -> promise
@@ -538,7 +528,7 @@ public class MqttClientHandler extends ChannelDuplexHandler {
       if (unsubscribePromises.containsKey(packetId)) {
         msg.setFailure(new MqttDuplicateIdException(MqttMessageType.UNSUBSCRIBE, packetId));
       } else {
-        final Promise<Void> promise = embedTimeLimit(msg);
+        final Promise<Void> promise = setTimer(msg);
         final MqttUnsubscribeMessage message;
         promise.addListener(new PromiseRemover<>(unsubscribePromises, packetId, promise));
         // channel(cancel, failure) -> promise
@@ -581,7 +571,7 @@ public class MqttClientHandler extends ChannelDuplexHandler {
     if (!isConnected()) {
       msg.setFailure(new NotYetConnectedException());
     } else {
-      final Promise<Void> promise = embedTimeLimit(msg);
+      final Promise<Void> promise = setTimer(msg);
       final MqttMessage message;
       promise.addListener(new PromiseQueueRemover<>(pingPromises));
       // channel(cancel, failure) -> promise
@@ -614,14 +604,8 @@ public class MqttClientHandler extends ChannelDuplexHandler {
     ctx.write(msg, promise.unvoid()).addListener(writeListener);
   }
 
-  protected <P extends MqttTimeLimitPromise<V>, V> P embedTimeLimit(P promise) {
-    final Timeout timeout;
-    if (promise.isTimeLimited()) {
-      timeout = timer.newTimeout(promise, promise.timeout(), promise.timeunit());
-    } else {
-      timeout = timer.newTimeout(promise, this.defaultTimeout, this.defaultTimeunit);
-    }
-    promise.addListener(new TimeoutCanceller<>(timeout));
+  protected <P extends MqttPromise<V>, V> P setTimer(P promise) {
+    promise.addListener(new TimeoutCanceller<>(promise.set(timer)));
     return promise;
   }
 

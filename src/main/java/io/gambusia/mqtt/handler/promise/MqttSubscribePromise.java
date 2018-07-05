@@ -26,17 +26,13 @@ import io.netty.handler.codec.mqtt.MqttQoS;
 import io.netty.util.Timeout;
 import io.netty.util.concurrent.EventExecutor;
 
-public class MqttSubscribePromise extends MqttTimeLimitPromise<MqttQoS[]> {
+public class MqttSubscribePromise extends MqttPromise<MqttQoS[]> {
 
   private final List<MqttSubscription> subscriptions;
 
-  public MqttSubscribePromise(EventExecutor executor, MqttSubscription... subscriptions) {
-    this(executor, 0, null, subscriptions);
-  }
-
-  public MqttSubscribePromise(EventExecutor executor, long timeout, TimeUnit timeunit,
+  public MqttSubscribePromise(EventExecutor executor, long timeout, TimeUnit unit,
       MqttSubscription... subscriptions) {
-    super(executor, timeout, timeunit);
+    super(executor, timeout, unit);
     this.subscriptions = Collections.unmodifiableList(
         Arrays.asList(checkNotContainsNull(subscriptions, "subscriptions")));
   }
