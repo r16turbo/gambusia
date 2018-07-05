@@ -16,7 +16,9 @@
 package io.gambusia.mqtt;
 
 import static io.gambusia.mqtt.handler.MqttFixedHeaders.*;
+import static io.gambusia.netty.util.Args.*;
 import java.util.concurrent.TimeUnit;
+import io.gambusia.mqtt.handler.MqttPinger;
 import io.gambusia.mqtt.handler.promise.MqttConnectPromise;
 import io.gambusia.mqtt.handler.promise.MqttPingPromise;
 import io.gambusia.mqtt.handler.promise.MqttPubRecPromise;
@@ -38,12 +40,19 @@ public class MqttAsyncClient {
 
   private Channel channel;
 
+  private MqttPinger pinger;
+
   public MqttAsyncClient() {
-    this.channel = null;
+    this(null, new MqttPinger());
   }
 
   public MqttAsyncClient(Channel channel) {
+    this(channel, new MqttPinger());
+  }
+
+  public MqttAsyncClient(Channel channel, MqttPinger pinger) {
     this.channel = channel;
+    this.pinger = checkNotNull(pinger, "pinger");
   }
 
   // initializer
@@ -61,61 +70,59 @@ public class MqttAsyncClient {
     return channel().eventLoop();
   }
 
+  public MqttPinger pinger() {
+    return pinger;
+  }
+
   // connect
-  public Future<MqttConnectResult> connect(boolean cleanSession,
-      int keepAlive, long pingInterval, TimeUnit pingTimeunit, String clientId) {
-    return connect(cleanSession, keepAlive, pingInterval, pingTimeunit, clientId,
+  public Future<MqttConnectResult> connect(boolean cleanSession, int keepAlive, String clientId) {
+    return connect(cleanSession, keepAlive, clientId,
         null, null, null);
   }
 
-  public Future<MqttConnectResult> connect(boolean cleanSession,
-      int keepAlive, long pingInterval, TimeUnit pingTimeunit, String clientId,
+  public Future<MqttConnectResult> connect(boolean cleanSession, int keepAlive, String clientId,
       long timeout, TimeUnit unit) {
-    return connect(cleanSession, keepAlive, pingInterval, pingTimeunit, clientId,
+    return connect(cleanSession, keepAlive, clientId,
         null, null, null, timeout, unit);
   }
 
-  public Future<MqttConnectResult> connect(boolean cleanSession,
-      int keepAlive, long pingInterval, TimeUnit pingTimeunit,
+  public Future<MqttConnectResult> connect(boolean cleanSession, int keepAlive,
       String clientId, String username, byte[] password) {
-    return connect(cleanSession, keepAlive, pingInterval, pingTimeunit, clientId,
+    return connect(cleanSession, keepAlive, clientId,
         null, username, password);
   }
 
-  public Future<MqttConnectResult> connect(boolean cleanSession,
-      int keepAlive, long pingInterval, TimeUnit pingTimeunit,
+  public Future<MqttConnectResult> connect(boolean cleanSession, int keepAlive,
       String clientId, String username, byte[] password,
       long timeout, TimeUnit unit) {
-    return connect(cleanSession, keepAlive, pingInterval, pingTimeunit, clientId,
+    return connect(cleanSession, keepAlive, clientId,
         null, username, password, timeout, unit);
   }
 
-  public Future<MqttConnectResult> connect(boolean cleanSession,
-      int keepAlive, long pingInterval, TimeUnit pingTimeunit, String clientId, MqttArticle will) {
-    return connect(cleanSession, keepAlive, pingInterval, pingTimeunit, clientId,
+  public Future<MqttConnectResult> connect(boolean cleanSession, int keepAlive,
+      String clientId, MqttArticle will) {
+    return connect(cleanSession, keepAlive, clientId,
         will, null, null);
   }
 
-  public Future<MqttConnectResult> connect(boolean cleanSession,
-      int keepAlive, long pingInterval, TimeUnit pingTimeunit, String clientId, MqttArticle will,
+  public Future<MqttConnectResult> connect(boolean cleanSession, int keepAlive,
+      String clientId, MqttArticle will,
       long timeout, TimeUnit unit) {
-    return connect(cleanSession, keepAlive, pingInterval, pingTimeunit, clientId,
+    return connect(cleanSession, keepAlive, clientId,
         will, null, null, timeout, unit);
   }
 
-  public Future<MqttConnectResult> connect(boolean cleanSession,
-      int keepAlive, long pingInterval, TimeUnit pingTimeunit,
+  public Future<MqttConnectResult> connect(boolean cleanSession, int keepAlive,
       String clientId, MqttArticle will, String username, byte[] password) {
     return writeAndFlush(new MqttConnectPromise(eventLoop(), "MQTT", 4,
-        cleanSession, keepAlive, clientId, will, username, password, pingInterval, pingTimeunit));
+        cleanSession, keepAlive, pinger(), clientId, will, username, password));
   }
 
-  public Future<MqttConnectResult> connect(boolean cleanSession,
-      int keepAlive, long pingInterval, TimeUnit pingTimeunit,
+  public Future<MqttConnectResult> connect(boolean cleanSession, int keepAlive,
       String clientId, MqttArticle will, String username, byte[] password,
       long timeout, TimeUnit unit) {
     return writeAndFlush(new MqttConnectPromise(eventLoop(), timeout, unit, "MQTT", 4,
-        cleanSession, keepAlive, clientId, will, username, password, pingInterval, pingTimeunit));
+        cleanSession, keepAlive, pinger(), clientId, will, username, password));
   }
 
   public MqttPublishFuture publish0(boolean retain, String topic, ByteBuf payload) {

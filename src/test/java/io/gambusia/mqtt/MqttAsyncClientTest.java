@@ -136,7 +136,7 @@ class MqttAsyncClientTest {
   @Test
   @DisplayName("mqtt connect")
   void test001() throws InterruptedException, ExecutionException {
-    MqttConnectResult result = client.connect(true, 2, 1, TimeUnit.SECONDS, "test").get();
+    MqttConnectResult result = client.connect(true, 2, "test").get();
     assertNotNull(result);
     assertEquals(0, result.returnCode());
     assertFalse(result.isSessionPresent());

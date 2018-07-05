@@ -20,6 +20,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import io.gambusia.mqtt.MqttArticle;
 import io.gambusia.mqtt.MqttConnectResult;
+import io.gambusia.mqtt.handler.MqttPinger;
 import io.netty.util.Timeout;
 import io.netty.util.concurrent.EventExecutor;
 
@@ -29,41 +30,36 @@ public class MqttConnectPromise extends MqttTimeLimitPromise<MqttConnectResult> 
   private final int protocolLevel;
   private final boolean cleanSession;
   private final int keepAlive;
+  private final MqttPinger pinger;
   private final String clientId;
   private final MqttArticle will;
   private final String username;
   private final byte[] password;
 
-  private final long pingInterval;
-  private final TimeUnit pingTimeunit;
-
   public MqttConnectPromise(EventExecutor executor,
-      String protocolName, int protocolLevel, boolean cleanSession, int keepAlive,
-      String clientId, MqttArticle will, String username, byte[] password,
-      long pingInterval, TimeUnit pingTimeunit) {
+      String protocolName, int protocolLevel, boolean cleanSession,
+      int keepAlive, MqttPinger pinger,
+      String clientId, MqttArticle will, String username, byte[] password) {
 
-    this(executor, 0, null, protocolName, protocolLevel, cleanSession, keepAlive,
-        clientId, will, username, password, pingInterval, pingTimeunit);
+    this(executor, 0, null, protocolName, protocolLevel, cleanSession, keepAlive, pinger,
+        clientId, will, username, password);
   }
 
   public MqttConnectPromise(EventExecutor executor, long timeout, TimeUnit timeunit,
       String protocolName, int protocolLevel,
-      boolean cleanSession, int keepAlive, String clientId, MqttArticle will,
-      String username, byte[] password,
-      long pingInterval, TimeUnit pingTimeunit) {
+      boolean cleanSession, int keepAlive, MqttPinger pinger,
+      String clientId, MqttArticle will, String username, byte[] password) {
 
     super(executor, timeout, timeunit);
     this.protocolName = checkNotEmpty(protocolName, "protocolName");
     this.protocolLevel = protocolLevel;
     this.cleanSession = cleanSession;
     this.keepAlive = keepAlive;
+    this.pinger = checkNotNull(pinger, "pinger");
     this.clientId = clientId;
     this.will = will;
     this.username = username;
     this.password = password;
-
-    this.pingInterval = pingInterval;
-    this.pingTimeunit = pingTimeunit;
   }
 
   public String protocolName() {
@@ -82,6 +78,10 @@ public class MqttConnectPromise extends MqttTimeLimitPromise<MqttConnectResult> 
     return keepAlive;
   }
 
+  public MqttPinger pinger() {
+    return pinger;
+  }
+
   public String clientId() {
     return clientId;
   }
@@ -96,14 +96,6 @@ public class MqttConnectPromise extends MqttTimeLimitPromise<MqttConnectResult> 
 
   public byte[] password() {
     return password;
-  }
-
-  public long pingInterval() {
-    return pingInterval;
-  }
-
-  public TimeUnit pingTimeunit() {
-    return pingTimeunit;
   }
 
   @Override
