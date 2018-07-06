@@ -13,7 +13,7 @@ apply plugin: 'maven'
 apply plugin: 'osgi'
 
 group = 'io.gambusia'
-version = '0.8.0'
+version = '0.8.1-SNAPSHOT'
 
 description = 'Netty-based MQTT v3.1.1 lightweight client'
 
