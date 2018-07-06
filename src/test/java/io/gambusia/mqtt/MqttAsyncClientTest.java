@@ -39,8 +39,8 @@ import org.junit.jupiter.params.provider.ValueSource;
 import io.gambusia.mqtt.handler.MqttClientHandler;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.PooledByteBufAllocator;
-import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.ChannelPipeline;
@@ -73,6 +73,8 @@ class MqttAsyncClientTest {
   static final String TOPIC1 = "test/1";
   static final String TOPIC2 = "test/2";
 
+  static final byte PAYLOAD[] = "Hello World!".getBytes(StandardCharsets.UTF_8);
+
   static EventLoopGroup workerGroup;
   static Bootstrap b;
 
@@ -87,14 +89,16 @@ class MqttAsyncClientTest {
   };
   private final String[] topicFilters = Arrays.stream(subscriptions)
       .map(s -> s.topicFilter()).toArray(String[]::new);
-  private final ByteBuf payload = Unpooled.unreleasableBuffer(
-      Unpooled.wrappedBuffer("Hello World!".getBytes(StandardCharsets.UTF_8)));
+
+  private ByteBuf payload() {
+    return ByteBufAllocator.DEFAULT.directBuffer(PAYLOAD.length).writeBytes(PAYLOAD);
+  }
 
   @BeforeAll
   static void setUpBeforeClass() throws Exception {
     workerGroup = new NioEventLoopGroup();
     subscribeQueue = new ArrayBlockingQueue<>(8);
-    MqttSubscriber subscriber = (ch, msg) -> subscribeQueue.put(msg);
+    final MqttSubscriber subscriber = (ch, msg) -> subscribeQueue.put(msg);
 
     b = new Bootstrap();
     b.group(workerGroup);
@@ -182,7 +186,7 @@ class MqttAsyncClientTest {
   @Test
   @DisplayName("publish qos0")
   void test020() throws InterruptedException, ExecutionException {
-    MqttPublishFuture future = client.publish0(false, TOPIC0, payload);
+    MqttPublishFuture future = client.publish0(false, TOPIC0, payload());
     assertNull(future.get());
     if (future.isReleasePending()) {
       client.release(future.packetId()).addListener(f -> assertTrue(f.isSuccess())).sync();
@@ -193,7 +197,7 @@ class MqttAsyncClientTest {
   @Test
   @DisplayName("publish qos1")
   void test021() throws InterruptedException, ExecutionException {
-    MqttPublishFuture future = client.publish1(false, TOPIC1, payload);
+    MqttPublishFuture future = client.publish1(false, TOPIC1, payload());
     assertNull(future.get());
     if (future.isReleasePending()) {
       client.release(future.packetId()).addListener(f -> assertTrue(f.isSuccess())).sync();
@@ -204,7 +208,7 @@ class MqttAsyncClientTest {
   @Test
   @DisplayName("publish qos2")
   void test022() throws InterruptedException, ExecutionException {
-    MqttPublishFuture future = client.publish2(false, TOPIC2, payload);
+    MqttPublishFuture future = client.publish2(false, TOPIC2, payload());
     assertNull(future.get());
     if (future.isReleasePending()) {
       client.release(future.packetId()).addListener(f -> assertTrue(f.isSuccess())).sync();
@@ -215,7 +219,7 @@ class MqttAsyncClientTest {
   @Test
   @DisplayName("publish qos1 retry")
   void test031() throws InterruptedException, ExecutionException {
-    MqttPublishFuture failure = client.publish1(false, TOPIC1, payload, 1, TimeUnit.NANOSECONDS);
+    MqttPublishFuture failure = client.publish1(false, TOPIC1, payload(), 1, TimeUnit.NANOSECONDS);
     assertThrows(TimeoutException.class, () -> failure.sync());
     // duplicate
     assertTimeout(Duration.ofSeconds(1), () -> received(subscribeQueue.take()));
@@ -232,7 +236,7 @@ class MqttAsyncClientTest {
   @Test
   @DisplayName("publish qos2 retry")
   void test032() throws InterruptedException, ExecutionException {
-    MqttPublishFuture failure = client.publish2(false, TOPIC2, payload, 1, TimeUnit.NANOSECONDS);
+    MqttPublishFuture failure = client.publish2(false, TOPIC2, payload(), 1, TimeUnit.NANOSECONDS);
     assertThrows(TimeoutException.class, () -> failure.sync());
 
     MqttPublishFuture future = client.publish(failure);
@@ -260,7 +264,7 @@ class MqttAsyncClientTest {
     final long deadline = System.currentTimeMillis() + timeoutMillis;
     while (deadline > System.currentTimeMillis()) {
       final String topic = "test/" + count.incrementAndGet();
-      MqttPublishFuture future = client.publish(qos, false, topic, payload);
+      MqttPublishFuture future = client.publish(qos, false, topic, payload());
       assertNull(future.get());
       if (future.isReleasePending()) {
         client.release(future.packetId()).addListener(f -> assertTrue(f.isSuccess())).sync();
