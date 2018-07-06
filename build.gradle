@@ -3,15 +3,16 @@
  *
  * This generated file contains a sample Java Library project to get you started.
  * For more details take a look at the Java Libraries chapter in the Gradle
- * user guide available at https://docs.gradle.org/4.6/userguide/java_library_plugin.html
+ * user guide available at https://docs.gradle.org/4.8/userguide/java_library_plugin.html
  */
 
 // Apply the java-library plugin to add support for Java Library
 apply plugin: 'java-library'
 apply plugin: 'org.junit.platform.gradle.plugin'
-apply plugin: 'maven'
+apply plugin: 'maven-publish'
 apply plugin: 'osgi'
 
+ext.title = 'Gambusia/MQTT'
 group = 'io.gambusia'
 version = '0.9.1-SNAPSHOT'
 
@@ -66,9 +67,10 @@ task sourcesJar(type: Jar, dependsOn: classes) {
 
 jar {
     manifest {
-        instruction 'Implementation-Title', 'Gambusia'
+        instruction 'Implementation-Title', title
         instruction 'Implementation-Version', version
         instruction 'Implementation-Vendor', 'Issey Yamakoshi'
+        instruction 'Automatic-Module-Name', 'io.gambusia.mqtt'
 
         description project.description
         docURL 'https://github.com/r16turbo/gambusia'
@@ -76,57 +78,45 @@ jar {
     }
 }
 
-artifacts {
-    archives sourcesJar
-}
-
-install {
-    repositories.mavenInstaller {
-        customizePom(pom, project)
-    }
-}
-
-uploadArchives {
-    repositories.mavenDeployer {
-        customizePom(pom, project)
-        repository(url: "file:$rootDir/../maven")
-    }
-}
-
-def customizePom(pom, gradleProject) {
-    pom.whenConfigured { generatedPom ->
-        // eliminate test-scoped dependencies
-        generatedPom.dependencies.removeAll { dep ->
-            dep.scope == "test"
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            groupId project.group
+            artifactId project.name
+            version project.version
+            from components.java
+            artifact sourcesJar
+            pom {
+                name = title
+                description = project.description
+                url = 'https://github.com/r16turbo/gambusia'
+                licenses {
+                    license {
+                        name = 'Apache License, Version 2.0'
+                        url = 'http://www.apache.org/licenses/LICENSE-2.0'
+                    }
+                }
+                scm {
+                    url = 'https://github.com/r16turbo/gambusia'
+                    connection = 'scm:git:https://github.com/r16turbo/gambusia.git'
+                    developerConnection = 'scm:git:git@github.com:r16turbo/gambusia.git'
+                }
+                developers {
+                    developer {
+                        id = 'r16turbo'
+                        name = 'Issey Yamakoshi'
+                    }
+                }
+                issueManagement {
+                    system = 'GitHub Issues'
+                    url = 'https://github.com/r16turbo/gambusia/issues'
+                }
+            }
         }
-
-        // add all items necessary for maven central publication
-        generatedPom.project {
-            name = gradleProject.name
-            description = gradleProject.description
-            url = "https://github.com/r16turbo/gambusia"
-            licenses {
-                license {
-                    name "Apache License, Version 2.0"
-                    url "http://www.apache.org/licenses/LICENSE-2.0"
-                    distribution "repo"
-                }
-            }
-            scm {
-                url = "https://github.com/r16turbo/gambusia"
-                connection = "scm:git:git://github.com/r16turbo/gambusia"
-                developerConnection = "scm:git:git://github.com/r16turbo/gambusia"
-            }
-            developers {
-                developer {
-                    id = "r16turbo"
-                    name = "Issey Yamakoshi"
-                }
-            }
-            issueManagement {
-                system = "GitHub Issues"
-                url = "https://github.com/r16turbo/gambusia/issues"
-            }
+    }
+    repositories {
+        maven {
+            url "file:$rootDir/../maven"
         }
     }
 }
