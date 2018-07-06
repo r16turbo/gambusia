@@ -262,11 +262,11 @@ public class MqttClientHandler extends ChannelDuplexHandler {
       final MqttConnectReturnCode returnCode = variableHeader.connectReturnCode();
       if (returnCode == MqttConnectReturnCode.CONNECTION_ACCEPTED) {
         MqttArticle will = connectPromise.will();
-        if (will != null) {
+        boolean successful = connectPromise.trySuccess(new MqttConnectResult(
+            variableHeader.isSessionPresent(), returnCode.byteValue()));
+        if (will != null && (successful || connectPromise.isSuccess())) {
           will.release();
         }
-        connectPromise.trySuccess(new MqttConnectResult(
-            variableHeader.isSessionPresent(), returnCode.byteValue()));
       } else {
         connectPromise.tryFailure(new MqttConnectionRefusedException(returnCode.byteValue()));
       }
@@ -356,9 +356,8 @@ public class MqttClientHandler extends ChannelDuplexHandler {
         final MqttQoS qos = article.qos();
         if (qos != MqttQoS.AT_LEAST_ONCE) {
           promise.tryFailure(new MqttQoSException("invalid=" + qos.value() + ", expect=1"));
-        } else {
+        } else if (promise.trySuccess(null) || promise.isSuccess()) {
           promise.article().release();
-          promise.trySuccess(null);
         }
       }
     }
@@ -377,9 +376,8 @@ public class MqttClientHandler extends ChannelDuplexHandler {
         final MqttQoS qos = article.qos();
         if (qos != MqttQoS.EXACTLY_ONCE) {
           promise.tryFailure(new MqttQoSException("invalid=" + qos.value() + ", expect=2"));
-        } else {
+        } else if (promise.trySuccess(null) || promise.isSuccess()) {
           promise.article().release();
-          promise.trySuccess(null);
         }
       }
     }
@@ -585,9 +583,9 @@ public class MqttClientHandler extends ChannelDuplexHandler {
 
   public void startKeepAlive(ChannelHandlerContext ctx, MqttConnectPromise promise) {
     if (keepAlive == null) {
-      final MqttPinger pinger = promise.pinger();
-      final long delay = promise.keepAlive();
-      final TimeUnit unit = TimeUnit.SECONDS;
+      MqttPinger pinger = promise.pinger();
+      long delay = promise.keepAlive();
+      TimeUnit unit = TimeUnit.SECONDS;
       keepAlive = timer.newTimeout(new KeepAliveTask(ctx, pinger, delay, unit), delay, unit);
     }
   }
