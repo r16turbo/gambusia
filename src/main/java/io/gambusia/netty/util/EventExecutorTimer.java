@@ -13,13 +13,16 @@
  * License for the specific language governing permissions and limitations
  * under the License.
  */
+
 package io.gambusia.netty.util;
 
 import static io.gambusia.netty.util.Args.*;
 import static io.netty.util.internal.logging.InternalLoggerFactory.*;
+
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+
 import io.netty.util.Timeout;
 import io.netty.util.Timer;
 import io.netty.util.TimerTask;

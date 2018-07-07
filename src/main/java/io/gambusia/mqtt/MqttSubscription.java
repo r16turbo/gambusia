@@ -13,9 +13,11 @@
  * License for the specific language governing permissions and limitations
  * under the License.
  */
+
 package io.gambusia.mqtt;
 
 import static io.gambusia.netty.util.Args.*;
+
 import io.netty.handler.codec.mqtt.MqttQoS;
 
 public class MqttSubscription {

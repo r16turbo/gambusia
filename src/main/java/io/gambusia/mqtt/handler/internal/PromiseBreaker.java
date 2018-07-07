@@ -1,6 +1,8 @@
+
 package io.gambusia.mqtt.handler.internal;
 
 import java.util.function.Consumer;
+
 import io.netty.util.concurrent.Promise;
 
 public class PromiseBreaker implements Consumer<Promise<?>> {

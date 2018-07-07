@@ -13,12 +13,15 @@
  * License for the specific language governing permissions and limitations
  * under the License.
  */
+
 package io.gambusia.netty.util.concurrent;
 
 import static io.gambusia.netty.util.Args.*;
 import static io.netty.util.internal.logging.InternalLoggerFactory.*;
+
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.GenericFutureListener;
 import io.netty.util.concurrent.Promise;

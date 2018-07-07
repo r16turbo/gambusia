@@ -13,10 +13,13 @@
  * License for the specific language governing permissions and limitations
  * under the License.
  */
+
 package io.gambusia.mqtt.handler.promise;
 
 import static io.gambusia.netty.util.Args.*;
+
 import java.util.concurrent.TimeUnit;
+
 import io.netty.util.Timeout;
 import io.netty.util.Timer;
 import io.netty.util.TimerTask;

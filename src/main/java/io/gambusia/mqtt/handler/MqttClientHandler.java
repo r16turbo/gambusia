@@ -13,10 +13,12 @@
  * License for the specific language governing permissions and limitations
  * under the License.
  */
+
 package io.gambusia.mqtt.handler;
 
 import static io.gambusia.mqtt.handler.MqttFixedHeaders.*;
 import static io.gambusia.netty.util.Args.*;
+
 import java.nio.channels.AlreadyConnectedException;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.NotYetConnectedException;
@@ -26,6 +28,7 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Queue;
 import java.util.concurrent.TimeUnit;
+
 import io.gambusia.mqtt.MqttArticle;
 import io.gambusia.mqtt.MqttConnectResult;
 import io.gambusia.mqtt.MqttPublication;
