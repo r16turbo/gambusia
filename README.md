@@ -22,7 +22,7 @@ repositories {
     maven { url 'https://r16turbo.github.io/maven/' }
 }
 dependencies {
-    compile 'io.gambusia:gambusia:0.9.1'
+    compile 'io.gambusia:gambusia:0.9.2'
 }
 ```
 
