@@ -13,7 +13,7 @@ apply plugin: 'osgi'
 
 ext.title = 'Gambusia/MQTT'
 group = 'io.gambusia'
-version = '0.9.1-SNAPSHOT'
+version = '0.9.1'
 
 description = 'Netty-based MQTT v3.1.1 lightweight client'
 
