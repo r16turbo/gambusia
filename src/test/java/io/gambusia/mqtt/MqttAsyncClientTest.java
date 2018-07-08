@@ -75,7 +75,7 @@ class MqttAsyncClientTest {
   static EventLoopGroup workerGroup;
   static Bootstrap b;
 
-  private final MqttAsyncClient client = new MqttAsyncClient(1, TimeUnit.SECONDS);
+  private final MqttAsyncClient client = new MqttAsyncClient(10, TimeUnit.SECONDS);
 
   @BeforeAll
   static void setUpBeforeClass() throws Exception {
@@ -159,7 +159,7 @@ class MqttAsyncClientTest {
     @Test
     @DisplayName("ping -> failed")
     void test02_ping_failed() throws InterruptedException {
-      assertFalse(client.ping(1, TimeUnit.NANOSECONDS).sync().isSuccess());
+      assertFalse(client.ping(1, TimeUnit.NANOSECONDS).await().isSuccess());
     }
 
     @Test
@@ -211,7 +211,7 @@ class MqttAsyncClientTest {
           MqttSubscription.qos2("test/#/2"),
           MqttSubscription.qos1("test/#/1"),
           MqttSubscription.qos0("test/#/0"))
-          .sync().isSuccess());
+          .await().isSuccess());
     }
 
     @Test
@@ -223,7 +223,7 @@ class MqttAsyncClientTest {
     @Test
     @DisplayName("unsubscribe failed")
     void test04_unsubscribe_failed() throws InterruptedException {
-      assertFalse(client.unsubscribe("test/#/2", "test/#/1", "test/#/0").sync().isSuccess());
+      assertFalse(client.unsubscribe("test/#/2", "test/#/1", "test/#/0").await().isSuccess());
     }
   }
 
@@ -414,7 +414,7 @@ class MqttAsyncClientTest {
       MqttPublishFuture future;
       MqttPublication msg;
       future = client.publish1(false, "test/1/0", payload(), 1, TimeUnit.NANOSECONDS);
-      assertFalse(future.sync().isSuccess());
+      assertFalse(future.await().isSuccess());
 
       msg = queue.poll(1, TimeUnit.SECONDS);
       assertNotNull(msg);
@@ -439,7 +439,7 @@ class MqttAsyncClientTest {
       MqttPublishFuture future;
       MqttPublication msg;
       future = client.publish1(false, "test/1/1", payload(), 1, TimeUnit.NANOSECONDS);
-      assertFalse(future.sync().isSuccess());
+      assertFalse(future.await().isSuccess());
 
       msg = queue.poll(1, TimeUnit.SECONDS);
       assertNotNull(msg);
@@ -466,7 +466,7 @@ class MqttAsyncClientTest {
       MqttPublishFuture future;
       MqttPublication msg;
       future = client.publish1(false, "test/1/2", payload(), 1, TimeUnit.NANOSECONDS);
-      assertFalse(future.sync().isSuccess());
+      assertFalse(future.await().isSuccess());
 
       msg = queue.poll(1, TimeUnit.SECONDS);
       assertNotNull(msg);
@@ -493,7 +493,7 @@ class MqttAsyncClientTest {
       MqttPublishFuture future;
       MqttPublication msg;
       future = client.publish2(false, "test/2/0", payload(), 1, TimeUnit.NANOSECONDS);
-      assertFalse(future.sync().isSuccess());
+      assertFalse(future.await().isSuccess());
 
       future = client.publish(future);
       assertTrue(future.sync().isSuccess());
@@ -514,7 +514,7 @@ class MqttAsyncClientTest {
       MqttPublishFuture future;
       MqttPublication msg;
       future = client.publish2(false, "test/2/1", payload(), 1, TimeUnit.NANOSECONDS);
-      assertFalse(future.sync().isSuccess());
+      assertFalse(future.await().isSuccess());
 
       future = client.publish(future);
       assertTrue(future.sync().isSuccess());
@@ -536,7 +536,7 @@ class MqttAsyncClientTest {
       MqttPublishFuture future;
       MqttPublication msg;
       future = client.publish2(false, "test/2/2", payload(), 1, TimeUnit.NANOSECONDS);
-      assertFalse(future.sync().isSuccess());
+      assertFalse(future.await().isSuccess());
 
       future = client.publish(future);
       assertTrue(future.sync().isSuccess());
