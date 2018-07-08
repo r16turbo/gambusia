@@ -1,4 +1,5 @@
 # Gambusia/MQTT Java Client
+[![Build Status](https://travis-ci.com/r16turbo/gambusia.svg?branch=master)](https://travis-ci.com/r16turbo/gambusia)
 
 The Gambusia/MQTT is an Netty-based MQTT v3.1.1 client library that run on the JVM.
 
