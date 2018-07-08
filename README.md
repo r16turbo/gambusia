@@ -88,7 +88,7 @@ public class MqttPublishSample {
       Channel ch = b.connect(broker.getHost(), broker.getPort()).sync().channel();
       MqttAsyncClient sampleClient = new MqttAsyncClient(ch, 1, TimeUnit.SECONDS);
       System.out.println("Connecting to broker: " + broker);
-      sampleClient.connect(false, 60, clientId).sync();
+      sampleClient.connect(true, 60, clientId).sync();
       System.out.println("Connected");
       System.out.println("Publishing message: " + content);
       ChannelPromise promise = ch.newPromise();
