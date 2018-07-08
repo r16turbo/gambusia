@@ -22,9 +22,10 @@ repositories {
     maven { url 'https://r16turbo.github.io/maven/' }
 }
 dependencies {
-    compile 'io.gambusia:gambusia:0.9.2'
+    compile 'io.gambusia:gambusia:X.X.X'
 }
 ```
+ - See the page for current release: https://github.com/r16turbo/gambusia/releases
 
 ## Getting Started
 
