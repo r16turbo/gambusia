@@ -56,9 +56,7 @@ repositories {
 }
 
 test {
-    useJUnitPlatform {
-        excludeTags 'keepalive', 'retransmit'
-    }
+    useJUnitPlatform()
 }
 
 task sourcesJar(type: Jar, dependsOn: classes) {
