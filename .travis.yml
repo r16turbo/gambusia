@@ -6,7 +6,6 @@ jdk:
 script: ./gradlew check
 
 cache:
-  apt: true
   directories:
     - $HOME/.gradle/caches
     - $HOME/.gradle/wrapper
