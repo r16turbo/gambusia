@@ -119,7 +119,7 @@ class MqttAsyncClientTest {
   @DisplayName("connect")
   void test01_connect() throws InterruptedException {
     Future<MqttConnectResult> future = client.connect(true, 2, "test");
-    assertTrue(future.await().isSuccess());
+    assertTrue(future.sync().isSuccess());
 
     MqttConnectResult result = future.getNow();
     assertNotNull(result);
@@ -130,7 +130,7 @@ class MqttAsyncClientTest {
   @Test
   @DisplayName("disconnect")
   void test02_disconnect() throws InterruptedException {
-    assertTrue(client.disconnect().await().isSuccess());
+    assertTrue(client.disconnect().sync().isSuccess());
   }
 
   @Nested
@@ -153,20 +153,20 @@ class MqttAsyncClientTest {
     @Test
     @DisplayName("ping -> pong")
     void test01_ping_pong() throws InterruptedException {
-      assertTrue(client.ping().await().isSuccess());
+      assertTrue(client.ping().sync().isSuccess());
     }
 
     @Test
     @DisplayName("ping -> failed")
     void test02_ping_failed() throws InterruptedException {
-      assertFalse(client.ping(1, TimeUnit.NANOSECONDS).await().isSuccess());
+      assertFalse(client.ping(1, TimeUnit.NANOSECONDS).sync().isSuccess());
     }
 
     @Test
     @DisplayName("wait for keepAlive + 1 sec")
     void test03_wait_for_keepalive_plus_1sec() throws InterruptedException {
       TimeUnit.SECONDS.sleep(3);
-      assertTrue(client.ping().await().isSuccess());
+      assertTrue(client.ping().sync().isSuccess());
     }
   }
 
@@ -194,7 +194,7 @@ class MqttAsyncClientTest {
           MqttSubscription.qos2("test/+/2"),
           MqttSubscription.qos1("test/+/1"),
           MqttSubscription.qos0("test/+/0"));
-      assertTrue(future.await().isSuccess());
+      assertTrue(future.sync().isSuccess());
 
       MqttQoS[] results = future.getNow();
       assertNotNull(results);
@@ -211,19 +211,19 @@ class MqttAsyncClientTest {
           MqttSubscription.qos2("test/#/2"),
           MqttSubscription.qos1("test/#/1"),
           MqttSubscription.qos0("test/#/0"))
-          .await().isSuccess());
+          .sync().isSuccess());
     }
 
     @Test
     @DisplayName("unsubscribe")
     void test03_unsubscribe() throws InterruptedException {
-      assertTrue(client.unsubscribe("test/2", "test/1", "test/0").await().isSuccess());
+      assertTrue(client.unsubscribe("test/2", "test/1", "test/0").sync().isSuccess());
     }
 
     @Test
     @DisplayName("unsubscribe failed")
     void test04_unsubscribe_failed() throws InterruptedException {
-      assertFalse(client.unsubscribe("test/#/2", "test/#/1", "test/#/0").await().isSuccess());
+      assertFalse(client.unsubscribe("test/#/2", "test/#/1", "test/#/0").sync().isSuccess());
     }
   }
 
@@ -247,10 +247,10 @@ class MqttAsyncClientTest {
     @Test
     @DisplayName("pub0/sub0")
     void test01_pub0_sub0() throws InterruptedException {
-      assertTrue(client.subscribe(MqttSubscription.qos0("test/0/0")).await().isSuccess());
+      assertTrue(client.subscribe(MqttSubscription.qos0("test/0/0")).sync().isSuccess());
 
       MqttPublishFuture future = client.publish0(false, "test/0/0", payload());
-      assertTrue(future.await().isSuccess());
+      assertTrue(future.sync().isSuccess());
       assertFalse(future.isReleasePending());
 
       MqttPublication msg = queue.poll(1, TimeUnit.SECONDS);
@@ -262,10 +262,10 @@ class MqttAsyncClientTest {
     @Test
     @DisplayName("pub0/sub1")
     void test02_pub0_sub1() throws InterruptedException {
-      assertTrue(client.subscribe(MqttSubscription.qos1("test/0/1")).await().isSuccess());
+      assertTrue(client.subscribe(MqttSubscription.qos1("test/0/1")).sync().isSuccess());
 
       MqttPublishFuture future = client.publish0(false, "test/0/1", payload());
-      assertTrue(future.await().isSuccess());
+      assertTrue(future.sync().isSuccess());
       assertFalse(future.isReleasePending());
 
       MqttPublication msg = queue.poll(1, TimeUnit.SECONDS);
@@ -277,10 +277,10 @@ class MqttAsyncClientTest {
     @Test
     @DisplayName("pub0/sub2")
     void test03_pub0_sub2() throws InterruptedException {
-      assertTrue(client.subscribe(MqttSubscription.qos2("test/0/2")).await().isSuccess());
+      assertTrue(client.subscribe(MqttSubscription.qos2("test/0/2")).sync().isSuccess());
 
       MqttPublishFuture future = client.publish0(false, "test/0/2", payload());
-      assertTrue(future.await().isSuccess());
+      assertTrue(future.sync().isSuccess());
       assertFalse(future.isReleasePending());
 
       MqttPublication msg = queue.poll(1, TimeUnit.SECONDS);
@@ -292,60 +292,60 @@ class MqttAsyncClientTest {
     @Test
     @DisplayName("pub1/sub0")
     void test04_pub1_sub0() throws InterruptedException {
-      assertTrue(client.subscribe(MqttSubscription.qos0("test/1/0")).await().isSuccess());
+      assertTrue(client.subscribe(MqttSubscription.qos0("test/1/0")).sync().isSuccess());
 
       MqttPublishFuture future = client.publish1(false, "test/1/0", payload());
-      assertTrue(future.await().isSuccess());
+      assertTrue(future.sync().isSuccess());
       assertFalse(future.isReleasePending());
 
       MqttPublication msg = queue.poll(1, TimeUnit.SECONDS);
       assertNotNull(msg);
       assertEquals(MqttQoS.valueOf(0), msg.qos());
       assertEquals("test/1/0", msg.topic());
-      assertTrue(client.ack(future.packetId()).await().isSuccess());
+      assertTrue(client.ack(future.packetId()).sync().isSuccess());
     }
 
     @Test
     @DisplayName("pub1/sub1")
     void test05_pub1_sub1() throws InterruptedException {
-      assertTrue(client.subscribe(MqttSubscription.qos1("test/1/1")).await().isSuccess());
+      assertTrue(client.subscribe(MqttSubscription.qos1("test/1/1")).sync().isSuccess());
 
       MqttPublishFuture future = client.publish1(false, "test/1/1", payload());
-      assertTrue(future.await().isSuccess());
+      assertTrue(future.sync().isSuccess());
       assertFalse(future.isReleasePending());
 
       MqttPublication msg = queue.poll(1, TimeUnit.SECONDS);
       assertNotNull(msg);
       assertEquals(MqttQoS.valueOf(1), msg.qos());
       assertEquals("test/1/1", msg.topic());
-      assertTrue(client.ack(future.packetId()).await().isSuccess());
+      assertTrue(client.ack(future.packetId()).sync().isSuccess());
     }
 
     @Test
     @DisplayName("pub1/sub2")
     void test06_pub1_sub2() throws InterruptedException {
-      assertTrue(client.subscribe(MqttSubscription.qos2("test/1/2")).await().isSuccess());
+      assertTrue(client.subscribe(MqttSubscription.qos2("test/1/2")).sync().isSuccess());
 
       MqttPublishFuture future = client.publish1(false, "test/1/2", payload());
-      assertTrue(future.await().isSuccess());
+      assertTrue(future.sync().isSuccess());
       assertFalse(future.isReleasePending());
 
       MqttPublication msg = queue.poll(1, TimeUnit.SECONDS);
       assertNotNull(msg);
       assertEquals(MqttQoS.valueOf(1), msg.qos());
       assertEquals("test/1/2", msg.topic());
-      assertTrue(client.ack(future.packetId()).await().isSuccess());
+      assertTrue(client.ack(future.packetId()).sync().isSuccess());
     }
 
     @Test
     @DisplayName("pub2/sub0")
     void test07_pub2_sub0() throws InterruptedException {
-      assertTrue(client.subscribe(MqttSubscription.qos0("test/2/0")).await().isSuccess());
+      assertTrue(client.subscribe(MqttSubscription.qos0("test/2/0")).sync().isSuccess());
 
       MqttPublishFuture future = client.publish2(false, "test/2/0", payload());
-      assertTrue(future.await().isSuccess());
+      assertTrue(future.sync().isSuccess());
       assertTrue(future.isReleasePending());
-      assertTrue(client.release(future.packetId()).await().isSuccess());
+      assertTrue(client.release(future.packetId()).sync().isSuccess());
 
       MqttPublication msg = queue.poll(1, TimeUnit.SECONDS);
       assertNotNull(msg);
@@ -356,36 +356,36 @@ class MqttAsyncClientTest {
     @Test
     @DisplayName("pub2/sub1")
     void test08_pub2_sub1() throws InterruptedException {
-      assertTrue(client.subscribe(MqttSubscription.qos1("test/2/1")).await().isSuccess());
+      assertTrue(client.subscribe(MqttSubscription.qos1("test/2/1")).sync().isSuccess());
 
       MqttPublishFuture future = client.publish2(false, "test/2/1", payload());
-      assertTrue(future.await().isSuccess());
+      assertTrue(future.sync().isSuccess());
       assertTrue(future.isReleasePending());
-      assertTrue(client.release(future.packetId()).await().isSuccess());
+      assertTrue(client.release(future.packetId()).sync().isSuccess());
 
       MqttPublication msg = queue.poll(1, TimeUnit.SECONDS);
       assertNotNull(msg);
       assertEquals(MqttQoS.valueOf(1), msg.qos());
       assertEquals("test/2/1", msg.topic());
-      assertTrue(client.ack(future.packetId()).await().isSuccess());
+      assertTrue(client.ack(future.packetId()).sync().isSuccess());
     }
 
     @Test
     @DisplayName("pub2/sub2")
     void test09_pub2_sub2() throws InterruptedException {
-      assertTrue(client.subscribe(MqttSubscription.qos2("test/2/2")).await().isSuccess());
+      assertTrue(client.subscribe(MqttSubscription.qos2("test/2/2")).sync().isSuccess());
 
       MqttPublishFuture future = client.publish2(false, "test/2/2", payload());
-      assertTrue(future.await().isSuccess());
+      assertTrue(future.sync().isSuccess());
       assertTrue(future.isReleasePending());
-      assertTrue(client.release(future.packetId()).await().isSuccess());
+      assertTrue(client.release(future.packetId()).sync().isSuccess());
 
       MqttPublication msg = queue.poll(1, TimeUnit.SECONDS);
       assertNotNull(msg);
       assertEquals(MqttQoS.valueOf(2), msg.qos());
       assertEquals("test/2/2", msg.topic());
-      assertTrue(client.received(future.packetId()).await().isSuccess());
-      assertTrue(client.complete(future.packetId()).await().isSuccess());
+      assertTrue(client.received(future.packetId()).sync().isSuccess());
+      assertTrue(client.complete(future.packetId()).sync().isSuccess());
     }
   }
 
@@ -409,12 +409,12 @@ class MqttAsyncClientTest {
     @Test
     @DisplayName("pub1/sub0")
     void test01_pub1_sub0() throws InterruptedException {
-      assertTrue(client.subscribe(MqttSubscription.qos0("test/1/0")).await().isSuccess());
+      assertTrue(client.subscribe(MqttSubscription.qos0("test/1/0")).sync().isSuccess());
 
       MqttPublishFuture future;
       MqttPublication msg;
       future = client.publish1(false, "test/1/0", payload(), 1, TimeUnit.NANOSECONDS);
-      assertFalse(future.await().isSuccess());
+      assertFalse(future.sync().isSuccess());
 
       msg = queue.poll(1, TimeUnit.SECONDS);
       assertNotNull(msg);
@@ -422,7 +422,7 @@ class MqttAsyncClientTest {
       assertEquals("test/1/0", msg.topic());
 
       future = client.publish(future);
-      assertTrue(future.await().isSuccess());
+      assertTrue(future.sync().isSuccess());
       assertFalse(future.isReleasePending());
 
       msg = queue.poll(1, TimeUnit.SECONDS);
@@ -434,71 +434,71 @@ class MqttAsyncClientTest {
     @Test
     @DisplayName("pub1/sub1")
     void test02_pub1_sub1() throws InterruptedException {
-      assertTrue(client.subscribe(MqttSubscription.qos1("test/1/1")).await().isSuccess());
+      assertTrue(client.subscribe(MqttSubscription.qos1("test/1/1")).sync().isSuccess());
 
       MqttPublishFuture future;
       MqttPublication msg;
       future = client.publish1(false, "test/1/1", payload(), 1, TimeUnit.NANOSECONDS);
-      assertFalse(future.await().isSuccess());
+      assertFalse(future.sync().isSuccess());
 
       msg = queue.poll(1, TimeUnit.SECONDS);
       assertNotNull(msg);
       assertEquals(MqttQoS.valueOf(1), msg.qos());
       assertEquals("test/1/1", msg.topic());
-      assertTrue(client.ack(future.packetId()).await().isSuccess());
+      assertTrue(client.ack(future.packetId()).sync().isSuccess());
 
       future = client.publish(future);
-      assertTrue(future.await().isSuccess());
+      assertTrue(future.sync().isSuccess());
       assertFalse(future.isReleasePending());
 
       msg = queue.poll(1, TimeUnit.SECONDS);
       assertNotNull(msg);
       assertEquals(MqttQoS.valueOf(1), msg.qos());
       assertEquals("test/1/1", msg.topic());
-      assertTrue(client.ack(future.packetId()).await().isSuccess());
+      assertTrue(client.ack(future.packetId()).sync().isSuccess());
     }
 
     @Test
     @DisplayName("pub1/sub2")
     void test03_pub1_sub2() throws InterruptedException {
-      assertTrue(client.subscribe(MqttSubscription.qos2("test/1/2")).await().isSuccess());
+      assertTrue(client.subscribe(MqttSubscription.qos2("test/1/2")).sync().isSuccess());
 
       MqttPublishFuture future;
       MqttPublication msg;
       future = client.publish1(false, "test/1/2", payload(), 1, TimeUnit.NANOSECONDS);
-      assertFalse(future.await().isSuccess());
+      assertFalse(future.sync().isSuccess());
 
       msg = queue.poll(1, TimeUnit.SECONDS);
       assertNotNull(msg);
       assertEquals(MqttQoS.valueOf(1), msg.qos());
       assertEquals("test/1/2", msg.topic());
-      assertTrue(client.ack(future.packetId()).await().isSuccess());
+      assertTrue(client.ack(future.packetId()).sync().isSuccess());
 
       future = client.publish(future);
-      assertTrue(future.await().isSuccess());
+      assertTrue(future.sync().isSuccess());
       assertFalse(future.isReleasePending());
 
       msg = queue.poll(1, TimeUnit.SECONDS);
       assertNotNull(msg);
       assertEquals(MqttQoS.valueOf(1), msg.qos());
       assertEquals("test/1/2", msg.topic());
-      assertTrue(client.ack(future.packetId()).await().isSuccess());
+      assertTrue(client.ack(future.packetId()).sync().isSuccess());
     }
 
     @Test
     @DisplayName("pub2/sub0")
     void test04_pub2_sub0() throws InterruptedException {
-      assertTrue(client.subscribe(MqttSubscription.qos0("test/2/0")).await().isSuccess());
+      assertTrue(client.subscribe(MqttSubscription.qos0("test/2/0")).sync().isSuccess());
 
       MqttPublishFuture future;
       MqttPublication msg;
       future = client.publish2(false, "test/2/0", payload(), 1, TimeUnit.NANOSECONDS);
-      assertFalse(future.await().isSuccess());
+      assertFalse(future.sync().isSuccess());
 
       future = client.publish(future);
-      assertTrue(future.await().isSuccess());
+      assertTrue(future.sync().isSuccess());
       assertTrue(future.isReleasePending());
-      assertTrue(client.release(future.packetId()).await().isSuccess());
+      assertTrue(client.release(future.packetId()).sync().isSuccess());
 
       msg = queue.poll(1, TimeUnit.SECONDS);
       assertNotNull(msg);
@@ -509,46 +509,46 @@ class MqttAsyncClientTest {
     @Test
     @DisplayName("pub2/sub1")
     void test05_pub2_sub1() throws InterruptedException {
-      assertTrue(client.subscribe(MqttSubscription.qos1("test/2/1")).await().isSuccess());
+      assertTrue(client.subscribe(MqttSubscription.qos1("test/2/1")).sync().isSuccess());
 
       MqttPublishFuture future;
       MqttPublication msg;
       future = client.publish2(false, "test/2/1", payload(), 1, TimeUnit.NANOSECONDS);
-      assertFalse(future.await().isSuccess());
+      assertFalse(future.sync().isSuccess());
 
       future = client.publish(future);
-      assertTrue(future.await().isSuccess());
+      assertTrue(future.sync().isSuccess());
       assertTrue(future.isReleasePending());
-      assertTrue(client.release(future.packetId()).await().isSuccess());
+      assertTrue(client.release(future.packetId()).sync().isSuccess());
 
       msg = queue.poll(1, TimeUnit.SECONDS);
       assertNotNull(msg);
       assertEquals(MqttQoS.valueOf(1), msg.qos());
       assertEquals("test/2/1", msg.topic());
-      assertTrue(client.ack(future.packetId()).await().isSuccess());
+      assertTrue(client.ack(future.packetId()).sync().isSuccess());
     }
 
     @Test
     @DisplayName("pub2/sub2")
     void test06_pub2_sub2() throws InterruptedException {
-      assertTrue(client.subscribe(MqttSubscription.qos2("test/2/2")).await().isSuccess());
+      assertTrue(client.subscribe(MqttSubscription.qos2("test/2/2")).sync().isSuccess());
 
       MqttPublishFuture future;
       MqttPublication msg;
       future = client.publish2(false, "test/2/2", payload(), 1, TimeUnit.NANOSECONDS);
-      assertFalse(future.await().isSuccess());
+      assertFalse(future.sync().isSuccess());
 
       future = client.publish(future);
-      assertTrue(future.await().isSuccess());
+      assertTrue(future.sync().isSuccess());
       assertTrue(future.isReleasePending());
-      assertTrue(client.release(future.packetId()).await().isSuccess());
+      assertTrue(client.release(future.packetId()).sync().isSuccess());
 
       msg = queue.poll(1, TimeUnit.SECONDS);
       assertNotNull(msg);
       assertEquals(MqttQoS.valueOf(2), msg.qos());
       assertEquals("test/2/2", msg.topic());
-      assertTrue(client.received(future.packetId()).await().isSuccess());
-      assertTrue(client.complete(future.packetId()).await().isSuccess());
+      assertTrue(client.received(future.packetId()).sync().isSuccess());
+      assertTrue(client.complete(future.packetId()).sync().isSuccess());
     }
   }
 
