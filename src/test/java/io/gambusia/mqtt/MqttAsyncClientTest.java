@@ -23,11 +23,8 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -39,6 +36,7 @@ import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.ChannelPipeline;
@@ -56,8 +54,6 @@ import io.netty.util.internal.logging.Log4J2LoggerFactory;
 
 class MqttAsyncClientTest {
 
-  private static final Logger logger = LogManager.getLogger(MqttAsyncClientTest.class);
-
   static {
     InternalLoggerFactory.setDefaultFactory(Log4J2LoggerFactory.INSTANCE);
   }
@@ -71,41 +67,33 @@ class MqttAsyncClientTest {
     return ByteBufAllocator.DEFAULT.directBuffer(PAYLOAD.length).writeBytes(PAYLOAD);
   }
 
-  static BlockingQueue<MqttPublication> queue;
-  static EventLoopGroup workerGroup;
-  static Bootstrap b;
-
-  private final MqttAsyncClient client = new MqttAsyncClient(10, TimeUnit.SECONDS);
-
-  @BeforeAll
-  static void setUpBeforeClass() throws Exception {
-    queue = new ArrayBlockingQueue<>(8);
-    workerGroup = new NioEventLoopGroup();
-    b = new Bootstrap();
-    b.group(workerGroup);
-    b.channel(NioSocketChannel.class);
-    b.option(ChannelOption.SO_KEEPALIVE, true);
-    b.option(ChannelOption.TCP_NODELAY, true);
-    b.handler(new ChannelInitializer<SocketChannel>() {
-      @Override
-      public void initChannel(SocketChannel ch) throws Exception {
-        ChannelPipeline p = ch.pipeline();
-        p.addLast("mqttDecoder", new MqttDecoder());
-        p.addLast("mqttEncoder", MqttEncoder.INSTANCE);
-        p.addLast("mqttHandler", new MqttClientHandler((channel, msg) -> queue.put(msg)));
-        p.addLast("loggingHandler", new LoggingHandler());
-      }
-    });
-  }
+  static final EventLoopGroup WORKER_GROUP = new NioEventLoopGroup();
 
   @AfterAll
   static void tearDownAfterClass() throws Exception {
-    workerGroup.shutdownGracefully().sync();
+    WORKER_GROUP.shutdownGracefully().sync();
   }
+
+  private final MqttAsyncClient client = new MqttAsyncClient(10, TimeUnit.SECONDS);
+  private final BlockingQueue<MqttPublication> queue = new ArrayBlockingQueue<>(8);
+  private final ChannelHandler handler = new ChannelInitializer<SocketChannel>() {
+    @Override
+    public void initChannel(SocketChannel ch) throws Exception {
+      ChannelPipeline p = ch.pipeline();
+      p.addLast("mqttDecoder", new MqttDecoder());
+      p.addLast("mqttEncoder", MqttEncoder.INSTANCE);
+      p.addLast("mqttHandler", new MqttClientHandler((channel, msg) -> queue.put(msg)));
+      p.addLast("loggingHandler", new LoggingHandler());
+    }
+  };
 
   @BeforeEach
   void setUp() throws Exception {
-    ChannelFuture f = b.connect(HOST, PORT);
+    ChannelFuture f = new Bootstrap()
+        .group(WORKER_GROUP).channel(NioSocketChannel.class)
+        .option(ChannelOption.SO_KEEPALIVE, true)
+        .option(ChannelOption.TCP_NODELAY, true)
+        .handler(handler).connect(HOST, PORT);
     client.set(f.sync().channel());
   }
 
@@ -133,14 +121,16 @@ class MqttAsyncClientTest {
     assertTrue(client.disconnect().sync().isSuccess());
   }
 
-  @Nested
-  @Tag("keepalive")
-  @DisplayName("KeepAlive")
-  class Test01_KeepAlive {
+  abstract class Test00 {
 
     @BeforeEach
     void setUp() throws Exception {
-      client.set(b.connect(HOST, PORT).sync().channel());
+      ChannelFuture f = new Bootstrap()
+          .group(WORKER_GROUP).channel(NioSocketChannel.class)
+          .option(ChannelOption.SO_KEEPALIVE, true)
+          .option(ChannelOption.TCP_NODELAY, true)
+          .handler(handler).connect(HOST, PORT);
+      client.set(f.sync().channel());
       client.connect(true, 2, "test").sync();
     }
 
@@ -149,6 +139,12 @@ class MqttAsyncClientTest {
       client.disconnect();
       client.channel().closeFuture().sync();
     }
+  }
+
+  @Nested
+  @Tag("keepalive")
+  @DisplayName("KeepAlive")
+  class Test01_KeepAlive extends Test00 {
 
     @Test
     @DisplayName("ping -> pong")
@@ -157,8 +153,8 @@ class MqttAsyncClientTest {
     }
 
     @Test
-    @DisplayName("wait for keepAlive + 1 sec")
-    void test02_wait_for_keepalive_plus_1sec() throws InterruptedException {
+    @DisplayName("keepAlive")
+    void test02_keepAlive() throws InterruptedException {
       TimeUnit.SECONDS.sleep(3);
       assertTrue(client.ping().sync().isSuccess());
     }
@@ -167,19 +163,7 @@ class MqttAsyncClientTest {
   @Nested
   @Tag("subscription")
   @DisplayName("Subscription")
-  class Test02_Subscription {
-
-    @BeforeEach
-    void setUp() throws Exception {
-      client.set(b.connect(HOST, PORT).sync().channel());
-      client.connect(true, 60, "test").sync();
-    }
-
-    @AfterEach
-    void tearDown() throws Exception {
-      client.disconnect();
-      client.channel().closeFuture().sync();
-    }
+  class Test02_Subscription extends Test00 {
 
     @Test
     @DisplayName("subscribe")
@@ -224,19 +208,7 @@ class MqttAsyncClientTest {
   @Nested
   @Tag("pubsub")
   @DisplayName("PubSub")
-  class Test03_PubSub {
-
-    @BeforeEach
-    void setUp() throws Exception {
-      client.set(b.connect(HOST, PORT).sync().channel());
-      client.connect(true, 60, "test").sync();
-    }
-
-    @AfterEach
-    void tearDown() throws Exception {
-      client.disconnect();
-      client.channel().closeFuture().sync();
-    }
+  class Test03_PubSub extends Test00 {
 
     @Test
     @DisplayName("pub0/sub0")
@@ -386,19 +358,7 @@ class MqttAsyncClientTest {
   @Nested
   @Tag("retransmit")
   @DisplayName("Retransmit")
-  class Test04_Retransmit {
-
-    @BeforeEach
-    void setUp() throws Exception {
-      client.set(b.connect(HOST, PORT).sync().channel());
-      client.connect(true, 60, "test").sync();
-    }
-
-    @AfterEach
-    void tearDown() throws Exception {
-      client.disconnect();
-      client.channel().closeFuture().sync();
-    }
+  class Test04_Retransmit extends Test00 {
 
     @Test
     @DisplayName("pub1/sub0")
@@ -555,16 +515,6 @@ class MqttAsyncClientTest {
 
     @Test
     @DisplayName("finish")
-    void test99_finish() throws InterruptedException {
-      MqttPublication publication;
-      while ((publication = queue.poll()) != null) {
-        try (MqttPublication msg = publication) {
-          logger.warn("unread: dup={}, qos={}, retain={}, packetId={}, topic={}, payload={}",
-              msg.isDuplicate(), msg.qos(), msg.isRetain(),
-              msg.packetId(), msg.topic(),
-              msg.payload().toString(StandardCharsets.UTF_8));
-        }
-      }
-    }
+    void test99_finish() {}
   }
 }
