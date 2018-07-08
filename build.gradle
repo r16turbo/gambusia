@@ -43,10 +43,9 @@ dependencies {
     // Use JUnit 5 test framework
     testImplementation 'org.apache.logging.log4j:log4j-api:2.11.0'
     testImplementation 'io.netty:netty-handler:4.1.13.Final'
-    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.1.0'
-    testImplementation 'org.junit.jupiter:junit-jupiter-params:5.1.0'
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.2.0'
     testRuntimeOnly 'org.apache.logging.log4j:log4j-core:2.11.0'
-    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.1.0'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.2.0'
 }
 
 // In this section you declare where to find the dependencies of your project
