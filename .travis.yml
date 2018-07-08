@@ -3,11 +3,11 @@ language: java
 jdk:
   - oraclejdk8
 
-script: ./gradlew check
+install: ./gradlew assemble
 
-addons:
-  apt:
-    sources:
-      - sourceline: 'ppa:mosquitto-dev/mosquitto-ppa'
-    packages:
-      - mosquitto
+#addons:
+#  apt:
+#    sources:
+#      - sourceline: 'ppa:mosquitto-dev/mosquitto-ppa'
+#    packages:
+#      - mosquitto
