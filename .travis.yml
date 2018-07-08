@@ -1,0 +1,14 @@
+language: java
+
+jdk:
+  - oraclejdk8
+  - openjdk8
+
+script: ./gradlew check
+
+addons:
+  apt:
+    sources:
+      - sourceline: 'ppa:mosquitto-dev/mosquitto-ppa'
+    packages:
+      - mosquitto
