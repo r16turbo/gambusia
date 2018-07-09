@@ -38,6 +38,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.concurrent.TimeUnit;
 
 import io.gambusia.mqtt.MqttAsyncClient;
+import io.gambusia.mqtt.MqttPublishFuture;
 import io.gambusia.mqtt.MqttSubscriber;
 import io.gambusia.mqtt.handler.MqttClientHandler;
 
@@ -56,6 +57,7 @@ import io.netty.handler.codec.mqtt.MqttDecoder;
 import io.netty.handler.codec.mqtt.MqttEncoder;
 import io.netty.handler.codec.mqtt.MqttQoS;
 import io.netty.handler.logging.LoggingHandler;
+import io.netty.util.concurrent.Future;
 
 public class MqttPublishSample {
 
@@ -63,7 +65,7 @@ public class MqttPublishSample {
 
     String topic    = "MQTT Examples";
     String content  = "Message from MqttPublishSample";
-    MqttQoS qos     = MqttQoS.EXACTLY_ONCE;
+    MqttQoS qos     = MqttQoS.valueOf(2);
     URI broker      = URI.create("tcp://iot.eclipse.org:1883");
     String clientId = "JavaSample";
 
@@ -87,35 +89,25 @@ public class MqttPublishSample {
     });
 
     try {
-      Channel ch = b.connect(broker.getHost(), broker.getPort()).sync().channel();
-      MqttAsyncClient sampleClient = new MqttAsyncClient(ch, 1, TimeUnit.SECONDS);
+      Channel channel = b.connect(broker.getHost(), broker.getPort()).sync().channel();
+      MqttAsyncClient client = new MqttAsyncClient(channel, 1, TimeUnit.SECONDS);
       System.out.println("Connecting to broker: " + broker);
-      sampleClient.connect(true, 60, clientId).sync();
+      client.connect(true, 60, clientId).sync();
       System.out.println("Connected");
       System.out.println("Publishing message: " + content);
-      ChannelPromise promise = ch.newPromise();
       ByteBuf payload = Unpooled.wrappedBuffer(content.getBytes(StandardCharsets.UTF_8));
-      sampleClient.publish(qos, false, topic, payload).addListener((MqttPublishFuture publish) -> {
-        if (publish.isSuccess()) {
-          if (publish.isReleasePending()) {
-            sampleClient.release(publish.packetId()).addListener(release -> {
-              if (release.isSuccess()) {
-                promise.setSuccess();
-              } else {
-                promise.setFailure(release.cause());
-              }
-            });
-          } else {
-            promise.setSuccess();
+      MqttPublishFuture publish = client.publish(qos, false, topic, payload);
+      if (publish.sync().isSuccess()) {
+        System.out.println("Message published");
+        if (publish.isReleasePending()) {
+          Future<Void> release = client.release(publish.packetId());
+          if (release.sync().isSuccess()) {
+            System.out.println("Message released");
           }
-        } else {
-          promise.setFailure(publish.cause());
         }
-      });
-      promise.sync();
-      System.out.println("Message published");
-      sampleClient.disconnect();
-      ch.closeFuture().sync();
+      }
+      client.disconnect();
+      channel.closeFuture().sync();
       System.out.println("Disconnected");
     } catch (Exception e) {
       e.printStackTrace();
