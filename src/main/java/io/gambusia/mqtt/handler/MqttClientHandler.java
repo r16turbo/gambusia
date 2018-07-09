@@ -97,6 +97,7 @@ public class MqttClientHandler extends ChannelDuplexHandler {
   private final MqttPacketId publishId;
   private final MqttPacketId subscribeId = new MqttPacketId();
   private final MqttPacketId unsubscribeId = new MqttPacketId();
+  private final MqttUnexpectedPacketHandler unexpectedPacketHandler;
 
   private MqttConnectPromise connectPromise = null;
   private final IntObjectMap<MqttPublishPromise> publishPromises = new IntObjectHashMap<>();
@@ -107,20 +108,23 @@ public class MqttClientHandler extends ChannelDuplexHandler {
   private final Queue<Promise<Void>> pingPromises = new LinkedList<>();
 
   public MqttClientHandler(MqttSubscriber subscriber) {
-    this(subscriber, new MqttPacketId(), null);
+    this(subscriber, new MqttPacketId(), new MqttUnexpectedPacketHandler(), null);
   }
 
   public MqttClientHandler(MqttSubscriber subscriber, Timer timer) {
-    this(subscriber, new MqttPacketId(), timer);
+    this(subscriber, new MqttPacketId(), new MqttUnexpectedPacketHandler(), timer);
   }
 
-  public MqttClientHandler(MqttSubscriber subscriber, MqttPacketId publishId) {
-    this(subscriber, publishId, null);
+  public MqttClientHandler(MqttSubscriber subscriber,
+      MqttPacketId publishId, MqttUnexpectedPacketHandler handler) {
+    this(subscriber, publishId, handler, null);
   }
 
-  public MqttClientHandler(MqttSubscriber subscriber, MqttPacketId publishId, Timer timer) {
+  public MqttClientHandler(MqttSubscriber subscriber,
+      MqttPacketId publishId, MqttUnexpectedPacketHandler handler, Timer timer) {
     this.subscriber = checkNotNull(subscriber, "subscriber");
     this.publishId = checkNotNull(publishId, "publishId");
+    this.unexpectedPacketHandler = checkNotNull(handler, "handler");
     this.timer = timer;
   }
 
@@ -353,7 +357,7 @@ public class MqttClientHandler extends ChannelDuplexHandler {
       final int packetId = ((MqttMessageIdVariableHeader) msg.variableHeader()).messageId();
       final MqttPublishPromise promise = publishPromises.remove(packetId);
       if (promise == null) {
-        ctx.fireExceptionCaught(new MqttUnknownIdException(MqttMessageType.PUBACK, packetId));
+        unexpectedPacketHandler.pubAckRead(ctx, packetId);
       } else {
         final MqttArticle article = promise.article();
         final MqttQoS qos = article.qos();
@@ -373,7 +377,7 @@ public class MqttClientHandler extends ChannelDuplexHandler {
       final int packetId = ((MqttMessageIdVariableHeader) msg.variableHeader()).messageId();
       final MqttPublishPromise promise = publishPromises.remove(packetId);
       if (promise == null) {
-        ctx.fireExceptionCaught(new MqttUnknownIdException(MqttMessageType.PUBREC, packetId));
+        unexpectedPacketHandler.pubRecRead(ctx, packetId);
       } else {
         final MqttArticle article = promise.article();
         final MqttQoS qos = article.qos();
@@ -415,7 +419,7 @@ public class MqttClientHandler extends ChannelDuplexHandler {
       final int packetId = ((MqttMessageIdVariableHeader) msg.variableHeader()).messageId();
       final Promise<Void> promise = releasePromises.remove(packetId);
       if (promise == null) {
-        ctx.fireExceptionCaught(new MqttUnknownIdException(MqttMessageType.PUBCOMP, packetId));
+        unexpectedPacketHandler.pubCompRead(ctx, packetId);
       } else {
         promise.trySuccess(null);
       }
@@ -460,7 +464,7 @@ public class MqttClientHandler extends ChannelDuplexHandler {
       final int packetId = ((MqttMessageIdVariableHeader) msg.variableHeader()).messageId();
       final Promise<Void> promise = receivePromises.remove(packetId);
       if (promise == null) {
-        ctx.fireExceptionCaught(new MqttUnknownIdException(MqttMessageType.PUBREL, packetId));
+        unexpectedPacketHandler.pubRelRead(ctx, packetId);
       } else {
         promise.trySuccess(null);
       }
@@ -507,7 +511,7 @@ public class MqttClientHandler extends ChannelDuplexHandler {
       final int packetId = msg.variableHeader().messageId();
       final Promise<MqttQoS[]> promise = subscribePromises.remove(packetId);
       if (promise == null) {
-        ctx.fireExceptionCaught(new MqttUnknownIdException(MqttMessageType.SUBACK, packetId));
+        unexpectedPacketHandler.subAckRead(ctx, packetId);
       } else {
         MqttQoS[] qosLevels = new MqttQoS[payload.grantedQoSLevels().size()];
         ListIterator<Integer> iterator = payload.grantedQoSLevels().listIterator();
@@ -552,7 +556,7 @@ public class MqttClientHandler extends ChannelDuplexHandler {
       final int packetId = msg.variableHeader().messageId();
       final Promise<Void> promise = unsubscribePromises.remove(packetId);
       if (promise == null) {
-        ctx.fireExceptionCaught(new MqttUnknownIdException(MqttMessageType.UNSUBACK, packetId));
+        unexpectedPacketHandler.unsubAckRead(ctx, packetId);
       } else {
         promise.trySuccess(null);
       }
