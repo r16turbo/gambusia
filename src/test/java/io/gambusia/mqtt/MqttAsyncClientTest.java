@@ -61,10 +61,11 @@ class MqttAsyncClientTest {
   static final String HOST = "127.0.0.1";
   static final int PORT = 1883;
 
-  static final byte[] PAYLOAD = "Hello World!".getBytes(StandardCharsets.UTF_8);
+  static final String PAYLOAD = "Hello World!";
+  static final byte[] BYTES = PAYLOAD.getBytes(StandardCharsets.UTF_8);
 
   static ByteBuf payload() {
-    return ByteBufAllocator.DEFAULT.directBuffer(PAYLOAD.length).writeBytes(PAYLOAD);
+    return ByteBufAllocator.DEFAULT.directBuffer(BYTES.length).writeBytes(BYTES);
   }
 
   static final EventLoopGroup WORKER_GROUP = new NioEventLoopGroup();
@@ -106,7 +107,7 @@ class MqttAsyncClientTest {
   @Test
   @DisplayName("connect")
   void test01_connect() throws InterruptedException {
-    Future<MqttConnectResult> future = client.connect(true, 2, "test");
+    Future<MqttConnectResult> future = client.connect(true, 60, "test");
     assertTrue(future.sync().isSuccess());
 
     MqttConnectResult result = future.getNow();
@@ -122,6 +123,15 @@ class MqttAsyncClientTest {
   }
 
   abstract class Test00 {
+
+    @BeforeEach
+    @AfterEach
+    void cleanUp() throws Exception {
+      MqttPublication msg;
+      while ((msg = queue.poll()) != null) {
+        msg.release();
+      }
+    }
 
     @BeforeEach
     void setUp() throws Exception {
@@ -177,9 +187,9 @@ class MqttAsyncClientTest {
       MqttQoS[] results = future.getNow();
       assertNotNull(results);
       assertEquals(3, results.length);
-      assertEquals(MqttQoS.valueOf(2), results[0]);
-      assertEquals(MqttQoS.valueOf(1), results[1]);
-      assertEquals(MqttQoS.valueOf(0), results[2]);
+      assertTrue(results[0].value() == 2);
+      assertTrue(results[1].value() == 1);
+      assertTrue(results[2].value() == 0);
     }
 
     @Test
@@ -217,12 +227,17 @@ class MqttAsyncClientTest {
 
       MqttPublishFuture future = client.publish0(false, "test/0/0", payload());
       assertTrue(future.sync().isSuccess());
+      assertTrue(future.packetId() == 0);
+      assertFalse(future.isDuplicate());
       assertFalse(future.isReleasePending());
 
       MqttPublication msg = queue.poll(1, TimeUnit.SECONDS);
       assertNotNull(msg);
-      assertEquals(MqttQoS.valueOf(0), msg.qos());
+      assertFalse(msg.isDuplicate());
+      assertTrue(msg.qos().value() == 0);
       assertEquals("test/0/0", msg.topic());
+      assertEquals(PAYLOAD, msg.payload().toString(StandardCharsets.UTF_8));
+      assertTrue(msg.release());
     }
 
     @Test
@@ -232,12 +247,17 @@ class MqttAsyncClientTest {
 
       MqttPublishFuture future = client.publish0(false, "test/0/1", payload());
       assertTrue(future.sync().isSuccess());
+      assertTrue(future.packetId() == 0);
+      assertFalse(future.isDuplicate());
       assertFalse(future.isReleasePending());
 
       MqttPublication msg = queue.poll(1, TimeUnit.SECONDS);
       assertNotNull(msg);
-      assertEquals(MqttQoS.valueOf(0), msg.qos());
+      assertFalse(msg.isDuplicate());
+      assertTrue(msg.qos().value() == 0);
       assertEquals("test/0/1", msg.topic());
+      assertEquals(PAYLOAD, msg.payload().toString(StandardCharsets.UTF_8));
+      assertTrue(msg.release());
     }
 
     @Test
@@ -247,12 +267,17 @@ class MqttAsyncClientTest {
 
       MqttPublishFuture future = client.publish0(false, "test/0/2", payload());
       assertTrue(future.sync().isSuccess());
+      assertTrue(future.packetId() == 0);
+      assertFalse(future.isDuplicate());
       assertFalse(future.isReleasePending());
 
       MqttPublication msg = queue.poll(1, TimeUnit.SECONDS);
       assertNotNull(msg);
-      assertEquals(MqttQoS.valueOf(0), msg.qos());
+      assertFalse(msg.isDuplicate());
+      assertTrue(msg.qos().value() == 0);
       assertEquals("test/0/2", msg.topic());
+      assertEquals(PAYLOAD, msg.payload().toString(StandardCharsets.UTF_8));
+      assertTrue(msg.release());
     }
 
     @Test
@@ -262,13 +287,17 @@ class MqttAsyncClientTest {
 
       MqttPublishFuture future = client.publish1(false, "test/1/0", payload());
       assertTrue(future.sync().isSuccess());
+      assertTrue(future.packetId() > 0);
+      assertFalse(future.isDuplicate());
       assertFalse(future.isReleasePending());
 
       MqttPublication msg = queue.poll(1, TimeUnit.SECONDS);
       assertNotNull(msg);
-      assertEquals(MqttQoS.valueOf(0), msg.qos());
+      assertFalse(msg.isDuplicate());
+      assertTrue(msg.qos().value() == 0);
       assertEquals("test/1/0", msg.topic());
-      assertTrue(client.ack(future.packetId()).sync().isSuccess());
+      assertEquals(PAYLOAD, msg.payload().toString(StandardCharsets.UTF_8));
+      assertTrue(msg.release());
     }
 
     @Test
@@ -278,13 +307,19 @@ class MqttAsyncClientTest {
 
       MqttPublishFuture future = client.publish1(false, "test/1/1", payload());
       assertTrue(future.sync().isSuccess());
+      assertTrue(future.packetId() > 0);
+      assertFalse(future.isDuplicate());
       assertFalse(future.isReleasePending());
 
       MqttPublication msg = queue.poll(1, TimeUnit.SECONDS);
       assertNotNull(msg);
-      assertEquals(MqttQoS.valueOf(1), msg.qos());
+      assertFalse(msg.isDuplicate());
+      assertTrue(msg.qos().value() == 1);
       assertEquals("test/1/1", msg.topic());
-      assertTrue(client.ack(future.packetId()).sync().isSuccess());
+      assertEquals(PAYLOAD, msg.payload().toString(StandardCharsets.UTF_8));
+      assertTrue(msg.release());
+
+      assertTrue(client.ack(msg.packetId()).sync().isSuccess());
     }
 
     @Test
@@ -294,13 +329,19 @@ class MqttAsyncClientTest {
 
       MqttPublishFuture future = client.publish1(false, "test/1/2", payload());
       assertTrue(future.sync().isSuccess());
+      assertTrue(future.packetId() > 0);
+      assertFalse(future.isDuplicate());
       assertFalse(future.isReleasePending());
 
       MqttPublication msg = queue.poll(1, TimeUnit.SECONDS);
       assertNotNull(msg);
-      assertEquals(MqttQoS.valueOf(1), msg.qos());
+      assertFalse(msg.isDuplicate());
+      assertTrue(msg.qos().value() == 1);
       assertEquals("test/1/2", msg.topic());
-      assertTrue(client.ack(future.packetId()).sync().isSuccess());
+      assertEquals(PAYLOAD, msg.payload().toString(StandardCharsets.UTF_8));
+      assertTrue(msg.release());
+
+      assertTrue(client.ack(msg.packetId()).sync().isSuccess());
     }
 
     @Test
@@ -310,13 +351,18 @@ class MqttAsyncClientTest {
 
       MqttPublishFuture future = client.publish2(false, "test/2/0", payload());
       assertTrue(future.sync().isSuccess());
+      assertTrue(future.packetId() > 0);
+      assertFalse(future.isDuplicate());
       assertTrue(future.isReleasePending());
       assertTrue(client.release(future.packetId()).sync().isSuccess());
 
       MqttPublication msg = queue.poll(1, TimeUnit.SECONDS);
       assertNotNull(msg);
-      assertEquals(MqttQoS.valueOf(0), msg.qos());
+      assertFalse(msg.isDuplicate());
+      assertTrue(msg.qos().value() == 0);
       assertEquals("test/2/0", msg.topic());
+      assertEquals(PAYLOAD, msg.payload().toString(StandardCharsets.UTF_8));
+      assertTrue(msg.release());
     }
 
     @Test
@@ -326,14 +372,20 @@ class MqttAsyncClientTest {
 
       MqttPublishFuture future = client.publish2(false, "test/2/1", payload());
       assertTrue(future.sync().isSuccess());
+      assertTrue(future.packetId() > 0);
+      assertFalse(future.isDuplicate());
       assertTrue(future.isReleasePending());
       assertTrue(client.release(future.packetId()).sync().isSuccess());
 
       MqttPublication msg = queue.poll(1, TimeUnit.SECONDS);
       assertNotNull(msg);
-      assertEquals(MqttQoS.valueOf(1), msg.qos());
+      assertFalse(msg.isDuplicate());
+      assertTrue(msg.qos().value() == 1);
       assertEquals("test/2/1", msg.topic());
-      assertTrue(client.ack(future.packetId()).sync().isSuccess());
+      assertEquals(PAYLOAD, msg.payload().toString(StandardCharsets.UTF_8));
+      assertTrue(msg.release());
+
+      assertTrue(client.ack(msg.packetId()).sync().isSuccess());
     }
 
     @Test
@@ -343,15 +395,21 @@ class MqttAsyncClientTest {
 
       MqttPublishFuture future = client.publish2(false, "test/2/2", payload());
       assertTrue(future.sync().isSuccess());
+      assertTrue(future.packetId() > 0);
+      assertFalse(future.isDuplicate());
       assertTrue(future.isReleasePending());
       assertTrue(client.release(future.packetId()).sync().isSuccess());
 
       MqttPublication msg = queue.poll(1, TimeUnit.SECONDS);
       assertNotNull(msg);
-      assertEquals(MqttQoS.valueOf(2), msg.qos());
+      assertFalse(msg.isDuplicate());
+      assertTrue(msg.qos().value() == 2);
       assertEquals("test/2/2", msg.topic());
-      assertTrue(client.received(future.packetId()).sync().isSuccess());
-      assertTrue(client.complete(future.packetId()).sync().isSuccess());
+      assertEquals(PAYLOAD, msg.payload().toString(StandardCharsets.UTF_8));
+      assertTrue(msg.release());
+
+      assertTrue(client.received(msg.packetId()).sync().isSuccess());
+      assertTrue(client.complete(msg.packetId()).sync().isSuccess());
     }
   }
 
@@ -367,21 +425,31 @@ class MqttAsyncClientTest {
 
       MqttPublishFuture future = client.publish1(false, "test/1/0", payload().retain());
       assertTrue(future.sync().isSuccess());
+      assertTrue(future.packetId() > 0);
+      assertFalse(future.isDuplicate());
       assertFalse(future.isReleasePending());
 
       MqttPublication msg = queue.poll(1, TimeUnit.SECONDS);
       assertNotNull(msg);
-      assertEquals(MqttQoS.valueOf(0), msg.qos());
+      assertFalse(msg.isDuplicate());
+      assertTrue(msg.qos().value() == 0);
       assertEquals("test/1/0", msg.topic());
+      assertEquals(PAYLOAD, msg.payload().toString(StandardCharsets.UTF_8));
+      assertTrue(msg.release());
 
       future = client.publish(future);
       assertTrue(future.sync().isSuccess());
+      assertTrue(future.packetId() > 0);
+      assertTrue(future.isDuplicate());
       assertFalse(future.isReleasePending());
 
       msg = queue.poll(1, TimeUnit.SECONDS);
       assertNotNull(msg);
-      assertEquals(MqttQoS.valueOf(0), msg.qos());
+      assertFalse(msg.isDuplicate());
+      assertTrue(msg.qos().value() == 0);
       assertEquals("test/1/0", msg.topic());
+      assertEquals(PAYLOAD, msg.payload().toString(StandardCharsets.UTF_8));
+      assertTrue(msg.release());
     }
 
     @Test
@@ -391,23 +459,35 @@ class MqttAsyncClientTest {
 
       MqttPublishFuture future = client.publish1(false, "test/1/1", payload().retain());
       assertTrue(future.sync().isSuccess());
+      assertTrue(future.packetId() > 0);
+      assertFalse(future.isDuplicate());
       assertFalse(future.isReleasePending());
 
       MqttPublication msg = queue.poll(1, TimeUnit.SECONDS);
       assertNotNull(msg);
-      assertEquals(MqttQoS.valueOf(1), msg.qos());
+      assertFalse(msg.isDuplicate());
+      assertTrue(msg.qos().value() == 1);
       assertEquals("test/1/1", msg.topic());
-      assertTrue(client.ack(future.packetId()).sync().isSuccess());
+      assertEquals(PAYLOAD, msg.payload().toString(StandardCharsets.UTF_8));
+      assertTrue(msg.release());
+
+      assertTrue(client.ack(msg.packetId()).sync().isSuccess());
 
       future = client.publish(future);
       assertTrue(future.sync().isSuccess());
+      assertTrue(future.packetId() > 0);
+      assertTrue(future.isDuplicate());
       assertFalse(future.isReleasePending());
 
       msg = queue.poll(1, TimeUnit.SECONDS);
       assertNotNull(msg);
-      assertEquals(MqttQoS.valueOf(1), msg.qos());
+      assertFalse(msg.isDuplicate());
+      assertTrue(msg.qos().value() == 1);
       assertEquals("test/1/1", msg.topic());
-      assertTrue(client.ack(future.packetId()).sync().isSuccess());
+      assertEquals(PAYLOAD, msg.payload().toString(StandardCharsets.UTF_8));
+      assertTrue(msg.release());
+
+      assertTrue(client.ack(msg.packetId()).sync().isSuccess());
     }
 
     @Test
@@ -417,23 +497,35 @@ class MqttAsyncClientTest {
 
       MqttPublishFuture future = client.publish1(false, "test/1/2", payload().retain());
       assertTrue(future.sync().isSuccess());
+      assertTrue(future.packetId() > 0);
+      assertFalse(future.isDuplicate());
       assertFalse(future.isReleasePending());
 
       MqttPublication msg = queue.poll(1, TimeUnit.SECONDS);
       assertNotNull(msg);
-      assertEquals(MqttQoS.valueOf(1), msg.qos());
+      assertFalse(msg.isDuplicate());
+      assertTrue(msg.qos().value() == 1);
       assertEquals("test/1/2", msg.topic());
-      assertTrue(client.ack(future.packetId()).sync().isSuccess());
+      assertEquals(PAYLOAD, msg.payload().toString(StandardCharsets.UTF_8));
+      assertTrue(msg.release());
+
+      assertTrue(client.ack(msg.packetId()).sync().isSuccess());
 
       future = client.publish(future);
       assertTrue(future.sync().isSuccess());
+      assertTrue(future.packetId() > 0);
+      assertTrue(future.isDuplicate());
       assertFalse(future.isReleasePending());
 
       msg = queue.poll(1, TimeUnit.SECONDS);
       assertNotNull(msg);
-      assertEquals(MqttQoS.valueOf(1), msg.qos());
+      assertFalse(msg.isDuplicate());
+      assertTrue(msg.qos().value() == 1);
       assertEquals("test/1/2", msg.topic());
-      assertTrue(client.ack(future.packetId()).sync().isSuccess());
+      assertEquals(PAYLOAD, msg.payload().toString(StandardCharsets.UTF_8));
+      assertTrue(msg.release());
+
+      assertTrue(client.ack(msg.packetId()).sync().isSuccess());
     }
 
     @Test
@@ -443,6 +535,8 @@ class MqttAsyncClientTest {
 
       MqttPublishFuture future = client.publish2(false, "test/2/0", payload().retain());
       assertTrue(future.sync().isSuccess());
+      assertTrue(future.packetId() > 0);
+      assertFalse(future.isDuplicate());
       assertTrue(future.isReleasePending());
 
       MqttPublication msg = queue.poll();
@@ -450,13 +544,18 @@ class MqttAsyncClientTest {
 
       future = client.publish(future);
       assertTrue(future.sync().isSuccess());
+      assertTrue(future.packetId() > 0);
+      assertTrue(future.isDuplicate());
       assertTrue(future.isReleasePending());
       assertTrue(client.release(future.packetId()).sync().isSuccess());
 
       msg = queue.poll(1, TimeUnit.SECONDS);
       assertNotNull(msg);
-      assertEquals(MqttQoS.valueOf(0), msg.qos());
+      assertFalse(msg.isDuplicate());
+      assertTrue(msg.qos().value() == 0);
       assertEquals("test/2/0", msg.topic());
+      assertEquals(PAYLOAD, msg.payload().toString(StandardCharsets.UTF_8));
+      assertTrue(msg.release());
     }
 
     @Test
@@ -466,6 +565,8 @@ class MqttAsyncClientTest {
 
       MqttPublishFuture future = client.publish2(false, "test/2/1", payload().retain());
       assertTrue(future.sync().isSuccess());
+      assertTrue(future.packetId() > 0);
+      assertFalse(future.isDuplicate());
       assertTrue(future.isReleasePending());
 
       MqttPublication msg = queue.poll();
@@ -473,14 +574,19 @@ class MqttAsyncClientTest {
 
       future = client.publish(future);
       assertTrue(future.sync().isSuccess());
+      assertTrue(future.packetId() > 0);
+      assertTrue(future.isDuplicate());
       assertTrue(future.isReleasePending());
       assertTrue(client.release(future.packetId()).sync().isSuccess());
 
       msg = queue.poll(1, TimeUnit.SECONDS);
       assertNotNull(msg);
-      assertEquals(MqttQoS.valueOf(1), msg.qos());
+      assertFalse(msg.isDuplicate());
+      assertTrue(msg.qos().value() == 1);
       assertEquals("test/2/1", msg.topic());
-      assertTrue(client.ack(future.packetId()).sync().isSuccess());
+      assertEquals(PAYLOAD, msg.payload().toString(StandardCharsets.UTF_8));
+
+      assertTrue(client.ack(msg.packetId()).sync().isSuccess());
     }
 
     @Test
@@ -490,6 +596,8 @@ class MqttAsyncClientTest {
 
       MqttPublishFuture future = client.publish2(false, "test/2/2", payload().retain());
       assertTrue(future.sync().isSuccess());
+      assertTrue(future.packetId() > 0);
+      assertFalse(future.isDuplicate());
       assertTrue(future.isReleasePending());
 
       MqttPublication msg = queue.poll();
@@ -497,15 +605,21 @@ class MqttAsyncClientTest {
 
       future = client.publish(future);
       assertTrue(future.sync().isSuccess());
+      assertTrue(future.packetId() > 0);
+      assertTrue(future.isDuplicate());
       assertTrue(future.isReleasePending());
       assertTrue(client.release(future.packetId()).sync().isSuccess());
 
       msg = queue.poll(1, TimeUnit.SECONDS);
       assertNotNull(msg);
-      assertEquals(MqttQoS.valueOf(2), msg.qos());
+      assertFalse(msg.isDuplicate());
+      assertTrue(msg.qos().value() == 2);
       assertEquals("test/2/2", msg.topic());
-      assertTrue(client.received(future.packetId()).sync().isSuccess());
-      assertTrue(client.complete(future.packetId()).sync().isSuccess());
+      assertEquals(PAYLOAD, msg.payload().toString(StandardCharsets.UTF_8));
+      assertTrue(msg.release());
+
+      assertTrue(client.received(msg.packetId()).sync().isSuccess());
+      assertTrue(client.complete(msg.packetId()).sync().isSuccess());
     }
   }
 
