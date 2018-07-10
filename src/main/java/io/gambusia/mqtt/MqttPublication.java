@@ -16,7 +16,8 @@
 
 package io.gambusia.mqtt;
 
-import static io.gambusia.netty.util.Args.*;
+import static io.gambusia.netty.util.Args.checkNotEmpty;
+import static io.gambusia.netty.util.Args.checkNotNull;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufHolder;

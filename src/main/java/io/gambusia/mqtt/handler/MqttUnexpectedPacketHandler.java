@@ -16,7 +16,7 @@
 
 package io.gambusia.mqtt.handler;
 
-import static io.gambusia.mqtt.handler.MqttFixedHeaders.*;
+import static io.gambusia.mqtt.handler.MqttFixedHeaders.PUBCOMP_HEADER;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.mqtt.MqttMessage;

@@ -16,17 +16,21 @@
 
 package io.gambusia.netty.util.concurrent;
 
-import static io.gambusia.netty.util.Args.*;
-import static io.netty.util.internal.logging.InternalLoggerFactory.*;
+import static io.gambusia.netty.util.Args.checkNotNull;
 
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.GenericFutureListener;
 import io.netty.util.concurrent.Promise;
 import io.netty.util.internal.logging.InternalLogger;
+import io.netty.util.internal.logging.InternalLoggerFactory;
 
 public class PromiseCanceller<V> implements GenericFutureListener<Future<V>> {
 
-  private static final InternalLogger logger = getInstance(PromiseCanceller.class);
+  private static final InternalLogger logger;
+
+  static {
+    logger = InternalLoggerFactory.getInstance(PromiseCanceller.class);
+  }
 
   private final Promise<?> promise;
   private final boolean mayInterruptIfRunning;

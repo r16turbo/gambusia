@@ -16,10 +16,11 @@
 
 package io.gambusia.mqtt;
 
-import static io.gambusia.mqtt.handler.MqttFixedHeaders.*;
-import static io.gambusia.netty.util.Args.*;
-
-import java.util.concurrent.TimeUnit;
+import static io.gambusia.mqtt.handler.MqttFixedHeaders.DISCONNECT_HEADER;
+import static io.gambusia.mqtt.handler.MqttFixedHeaders.PUBACK_HEADER;
+import static io.gambusia.mqtt.handler.MqttFixedHeaders.PUBCOMP_HEADER;
+import static io.gambusia.netty.util.Args.checkNotNull;
+import static io.gambusia.netty.util.Args.checkPositive;
 
 import io.gambusia.mqtt.handler.MqttPinger;
 import io.gambusia.mqtt.handler.promise.MqttConnectPromise;
@@ -38,6 +39,7 @@ import io.netty.handler.codec.mqtt.MqttMessageIdVariableHeader;
 import io.netty.handler.codec.mqtt.MqttQoS;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.Promise;
+import java.util.concurrent.TimeUnit;
 
 public class MqttAsyncClient {
 

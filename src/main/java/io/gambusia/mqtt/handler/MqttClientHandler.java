@@ -16,18 +16,13 @@
 
 package io.gambusia.mqtt.handler;
 
-import static io.gambusia.mqtt.handler.MqttFixedHeaders.*;
-import static io.gambusia.netty.util.Args.*;
-
-import java.nio.channels.AlreadyConnectedException;
-import java.nio.channels.ClosedChannelException;
-import java.nio.channels.NotYetConnectedException;
-import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.ListIterator;
-import java.util.Queue;
-import java.util.concurrent.TimeUnit;
+import static io.gambusia.mqtt.handler.MqttFixedHeaders.CONNECT_HEADER;
+import static io.gambusia.mqtt.handler.MqttFixedHeaders.PINGREQ_HEADER;
+import static io.gambusia.mqtt.handler.MqttFixedHeaders.PUBREC_HEADER;
+import static io.gambusia.mqtt.handler.MqttFixedHeaders.PUBREL_HEADER;
+import static io.gambusia.mqtt.handler.MqttFixedHeaders.SUBSCRIBE_HEADER;
+import static io.gambusia.mqtt.handler.MqttFixedHeaders.UNSUBSCRIBE_HEADER;
+import static io.gambusia.netty.util.Args.checkNotNull;
 
 import io.gambusia.mqtt.MqttArticle;
 import io.gambusia.mqtt.MqttConnectResult;
@@ -84,6 +79,15 @@ import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
 import io.netty.util.concurrent.Promise;
 import io.netty.util.concurrent.PromiseNotifier;
+import java.nio.channels.AlreadyConnectedException;
+import java.nio.channels.ClosedChannelException;
+import java.nio.channels.NotYetConnectedException;
+import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.ListIterator;
+import java.util.Queue;
+import java.util.concurrent.TimeUnit;
 
 public class MqttClientHandler extends ChannelDuplexHandler {
 
@@ -181,46 +185,6 @@ public class MqttClientHandler extends ChannelDuplexHandler {
     }
   }
 
-  @Override
-  public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
-    if (msg instanceof MqttMessage) {
-      MqttMessage message = (MqttMessage) msg;
-      switch (message.fixedHeader().messageType()) {
-        case CONNACK:
-          connAckRead(ctx, (MqttConnAckMessage) msg);
-          break;
-        case PUBLISH:
-          publishRead(ctx, (MqttPublishMessage) msg);
-          break;
-        case PUBACK:
-          pubAckRead(ctx, message);
-          break;
-        case PUBREC:
-          pubRecRead(ctx, message);
-          break;
-        case PUBREL:
-          pubRelRead(ctx, message);
-          break;
-        case PUBCOMP:
-          pubCompRead(ctx, message);
-          break;
-        case SUBACK:
-          subAckRead(ctx, (MqttSubAckMessage) msg);
-          break;
-        case UNSUBACK:
-          unsubAckRead(ctx, (MqttUnsubAckMessage) msg);
-          break;
-        case PINGRESP:
-          pingRespRead(ctx, message);
-          break;
-        default:
-          ctx.fireChannelRead(msg);
-      }
-    } else {
-      ctx.fireChannelRead(msg);
-    }
-  }
-
   public void write(ChannelHandlerContext ctx, MqttConnectPromise msg, ChannelPromise channel)
       throws Exception {
 
@@ -256,27 +220,6 @@ public class MqttClientHandler extends ChannelDuplexHandler {
       connectPromise.addListener(new KeepAliveCanceller());
       startKeepAlive(ctx, connectPromise);
       writeAndTouch(ctx, message, channel);
-    }
-  }
-
-  public void connAckRead(ChannelHandlerContext ctx, MqttConnAckMessage msg) throws Exception {
-    if (connectPromise == null) {
-      ctx.fireExceptionCaught(new NotYetConnectedException());
-    } else if (connectPromise.isSuccess()) {
-      ctx.fireExceptionCaught(new AlreadyConnectedException());
-    } else {
-      final MqttConnAckVariableHeader variableHeader = msg.variableHeader();
-      final MqttConnectReturnCode returnCode = variableHeader.connectReturnCode();
-      if (returnCode == MqttConnectReturnCode.CONNECTION_ACCEPTED) {
-        MqttArticle will = connectPromise.will();
-        boolean successful = connectPromise.trySuccess(new MqttConnectResult(
-            variableHeader.isSessionPresent(), returnCode.byteValue()));
-        if (will != null && (successful || connectPromise.isSuccess())) {
-          will.release();
-        }
-      } else {
-        connectPromise.tryFailure(new MqttConnectionRefusedException(returnCode.byteValue()));
-      }
     }
   }
 
@@ -350,6 +293,196 @@ public class MqttClientHandler extends ChannelDuplexHandler {
     }
   }
 
+  public void write(ChannelHandlerContext ctx, MqttPubRecPromise msg, ChannelPromise channel)
+      throws Exception {
+
+    if (!isConnected()) {
+      msg.setFailure(new NotYetConnectedException());
+    } else {
+      final int packetId = msg.packetId();
+      if (receivePromises.containsKey(packetId)) {
+        msg.setFailure(new MqttDuplicateIdException(MqttMessageType.PUBREC, packetId));
+      } else {
+        final Promise<Void> promise = setTimer(msg);
+        final MqttMessage message;
+        // channel(cancel, failure) -> promise
+        channel.addListener(new PromiseCanceller<>(promise));
+        // create mqtt message
+        message = new MqttMessage(PUBREC_HEADER, MqttMessageIdVariableHeader.from(packetId));
+        receivePromises.put(packetId, promise);
+        writeAndTouch(ctx, message, channel);
+      }
+    }
+  }
+
+  public void write(ChannelHandlerContext ctx, MqttPubRelPromise msg, ChannelPromise channel)
+      throws Exception {
+
+    if (!isConnected()) {
+      msg.setFailure(new NotYetConnectedException());
+    } else {
+      final int packetId = msg.packetId();
+      if (releasePromises.containsKey(packetId)) {
+        msg.setFailure(new MqttDuplicateIdException(MqttMessageType.PUBREL, packetId));
+      } else {
+        final Promise<Void> promise = setTimer(msg);
+        final MqttMessage message;
+        // channel(cancel, failure) -> promise
+        channel.addListener(new PromiseCanceller<>(promise));
+        // create mqtt message
+        message = new MqttMessage(PUBREL_HEADER, MqttMessageIdVariableHeader.from(packetId));
+        releasePromises.put(packetId, promise);
+        writeAndTouch(ctx, message, channel);
+      }
+    }
+  }
+
+  public void write(ChannelHandlerContext ctx, MqttSubscribePromise msg, ChannelPromise channel)
+      throws Exception {
+
+    if (!isConnected()) {
+      msg.setFailure(new NotYetConnectedException());
+    } else {
+      final int packetId = subscribeId.getAndIncrement();
+      if (subscribePromises.containsKey(packetId)) {
+        msg.setFailure(new MqttDuplicateIdException(MqttMessageType.SUBSCRIBE, packetId));
+      } else {
+        final Promise<MqttQoS[]> promise = setTimer(msg);
+        final MqttSubscribeMessage message;
+        promise.addListener(new PromiseRemover<>(subscribePromises, packetId, promise));
+        // channel(cancel, failure) -> promise
+        channel.addListener(new PromiseCanceller<>(promise));
+        { // create mqtt message
+          List<MqttTopicSubscription> subscriptions = new ArrayList<>(msg.subscriptions().size());
+          for (MqttSubscription subscription : msg.subscriptions()) {
+            subscriptions.add(new MqttTopicSubscription(
+                subscription.topicFilter(), subscription.qos()));
+          }
+          message = new MqttSubscribeMessage(
+              SUBSCRIBE_HEADER,
+              MqttMessageIdVariableHeader.from(packetId),
+              new MqttSubscribePayload(subscriptions));
+        }
+        subscribePromises.put(packetId, promise);
+        writeAndTouch(ctx, message, channel);
+      }
+    }
+  }
+
+  public void write(ChannelHandlerContext ctx, MqttUnsubscribePromise msg, ChannelPromise channel)
+      throws Exception {
+
+    if (!isConnected()) {
+      msg.setFailure(new NotYetConnectedException());
+    } else {
+      final int packetId = unsubscribeId.getAndIncrement();
+      if (unsubscribePromises.containsKey(packetId)) {
+        msg.setFailure(new MqttDuplicateIdException(MqttMessageType.UNSUBSCRIBE, packetId));
+      } else {
+        final Promise<Void> promise = setTimer(msg);
+        final MqttUnsubscribeMessage message;
+        promise.addListener(new PromiseRemover<>(unsubscribePromises, packetId, promise));
+        // channel(cancel, failure) -> promise
+        channel.addListener(new PromiseCanceller<>(promise));
+        // create mqtt message
+        message = new MqttUnsubscribeMessage(
+            UNSUBSCRIBE_HEADER,
+            MqttMessageIdVariableHeader.from(packetId),
+            new MqttUnsubscribePayload(msg.topicFilters()));
+        unsubscribePromises.put(packetId, promise);
+        writeAndTouch(ctx, message, channel);
+      }
+    }
+  }
+
+  public void write(ChannelHandlerContext ctx, MqttPingPromise msg, ChannelPromise channel)
+      throws Exception {
+
+    if (!isConnected()) {
+      msg.setFailure(new NotYetConnectedException());
+    } else {
+      final Promise<Void> promise = setTimer(msg);
+      final MqttMessage message;
+      promise.addListener(new PromiseQueueRemover<>(pingPromises));
+      // channel(cancel, failure) -> promise
+      channel.addListener(new PromiseCanceller<>(promise));
+      // create mqtt message
+      message = new MqttMessage(PINGREQ_HEADER);
+      pingPromises.add(promise);
+      writeAndTouch(ctx, message, channel);
+    }
+  }
+
+  @Override
+  public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
+    if (msg instanceof MqttMessage) {
+      MqttMessage message = (MqttMessage) msg;
+      switch (message.fixedHeader().messageType()) {
+        case CONNACK:
+          connAckRead(ctx, (MqttConnAckMessage) msg);
+          break;
+        case PUBLISH:
+          publishRead(ctx, (MqttPublishMessage) msg);
+          break;
+        case PUBACK:
+          pubAckRead(ctx, message);
+          break;
+        case PUBREC:
+          pubRecRead(ctx, message);
+          break;
+        case PUBREL:
+          pubRelRead(ctx, message);
+          break;
+        case PUBCOMP:
+          pubCompRead(ctx, message);
+          break;
+        case SUBACK:
+          subAckRead(ctx, (MqttSubAckMessage) msg);
+          break;
+        case UNSUBACK:
+          unsubAckRead(ctx, (MqttUnsubAckMessage) msg);
+          break;
+        case PINGRESP:
+          pingRespRead(ctx, message);
+          break;
+        default:
+          ctx.fireChannelRead(msg);
+      }
+    } else {
+      ctx.fireChannelRead(msg);
+    }
+  }
+
+  public void connAckRead(ChannelHandlerContext ctx, MqttConnAckMessage msg) throws Exception {
+    if (connectPromise == null) {
+      ctx.fireExceptionCaught(new NotYetConnectedException());
+    } else if (connectPromise.isSuccess()) {
+      ctx.fireExceptionCaught(new AlreadyConnectedException());
+    } else {
+      final MqttConnAckVariableHeader variableHeader = msg.variableHeader();
+      final MqttConnectReturnCode returnCode = variableHeader.connectReturnCode();
+      if (returnCode == MqttConnectReturnCode.CONNECTION_ACCEPTED) {
+        MqttArticle will = connectPromise.will();
+        boolean successful = connectPromise.trySuccess(new MqttConnectResult(
+            variableHeader.isSessionPresent(), returnCode.byteValue()));
+        if (will != null && (successful || connectPromise.isSuccess())) {
+          will.release();
+        }
+      } else {
+        connectPromise.tryFailure(new MqttConnectionRefusedException(returnCode.byteValue()));
+      }
+    }
+  }
+
+  public void publishRead(ChannelHandlerContext ctx, MqttPublishMessage msg) throws Exception {
+    final MqttFixedHeader fixedHeader = msg.fixedHeader();
+    final MqttPublishVariableHeader variableHeader = msg.variableHeader();
+    subscriber.arrived(ctx.channel(), new MqttPublication(
+        fixedHeader.isDup(), fixedHeader.qosLevel(), fixedHeader.isRetain(),
+        variableHeader.topicName(), variableHeader.packetId(),
+        msg.payload()));
+  }
+
   public void pubAckRead(ChannelHandlerContext ctx, MqttMessage msg) throws Exception {
     if (!isConnected()) {
       ctx.fireExceptionCaught(new NotYetConnectedException());
@@ -390,73 +523,6 @@ public class MqttClientHandler extends ChannelDuplexHandler {
     }
   }
 
-  public void write(ChannelHandlerContext ctx, MqttPubRelPromise msg, ChannelPromise channel)
-      throws Exception {
-
-    if (!isConnected()) {
-      msg.setFailure(new NotYetConnectedException());
-    } else {
-      final int packetId = msg.packetId();
-      if (releasePromises.containsKey(packetId)) {
-        msg.setFailure(new MqttDuplicateIdException(MqttMessageType.PUBREL, packetId));
-      } else {
-        final Promise<Void> promise = setTimer(msg);
-        final MqttMessage message;
-        // channel(cancel, failure) -> promise
-        channel.addListener(new PromiseCanceller<>(promise));
-        // create mqtt message
-        message = new MqttMessage(PUBREL_HEADER, MqttMessageIdVariableHeader.from(packetId));
-        releasePromises.put(packetId, promise);
-        writeAndTouch(ctx, message, channel);
-      }
-    }
-  }
-
-  public void pubCompRead(ChannelHandlerContext ctx, MqttMessage msg) throws Exception {
-    if (!isConnected()) {
-      ctx.fireExceptionCaught(new NotYetConnectedException());
-    } else {
-      final int packetId = ((MqttMessageIdVariableHeader) msg.variableHeader()).messageId();
-      final Promise<Void> promise = releasePromises.remove(packetId);
-      if (promise == null) {
-        unexpectedPacketHandler.pubCompRead(ctx, packetId);
-      } else {
-        promise.trySuccess(null);
-      }
-    }
-  }
-
-  public void publishRead(ChannelHandlerContext ctx, MqttPublishMessage msg) throws Exception {
-    final MqttFixedHeader fixedHeader = msg.fixedHeader();
-    final MqttPublishVariableHeader variableHeader = msg.variableHeader();
-    subscriber.arrived(ctx.channel(), new MqttPublication(
-        fixedHeader.isDup(), fixedHeader.qosLevel(), fixedHeader.isRetain(),
-        variableHeader.topicName(), variableHeader.packetId(),
-        msg.payload()));
-  }
-
-  public void write(ChannelHandlerContext ctx, MqttPubRecPromise msg, ChannelPromise channel)
-      throws Exception {
-
-    if (!isConnected()) {
-      msg.setFailure(new NotYetConnectedException());
-    } else {
-      final int packetId = msg.packetId();
-      if (receivePromises.containsKey(packetId)) {
-        msg.setFailure(new MqttDuplicateIdException(MqttMessageType.PUBREC, packetId));
-      } else {
-        final Promise<Void> promise = setTimer(msg);
-        final MqttMessage message;
-        // channel(cancel, failure) -> promise
-        channel.addListener(new PromiseCanceller<>(promise));
-        // create mqtt message
-        message = new MqttMessage(PUBREC_HEADER, MqttMessageIdVariableHeader.from(packetId));
-        receivePromises.put(packetId, promise);
-        writeAndTouch(ctx, message, channel);
-      }
-    }
-  }
-
   public void pubRelRead(ChannelHandlerContext ctx, MqttMessage msg) throws Exception {
     if (!isConnected()) {
       ctx.fireExceptionCaught(new NotYetConnectedException());
@@ -471,34 +537,16 @@ public class MqttClientHandler extends ChannelDuplexHandler {
     }
   }
 
-  public void write(ChannelHandlerContext ctx, MqttSubscribePromise msg, ChannelPromise channel)
-      throws Exception {
-
+  public void pubCompRead(ChannelHandlerContext ctx, MqttMessage msg) throws Exception {
     if (!isConnected()) {
-      msg.setFailure(new NotYetConnectedException());
+      ctx.fireExceptionCaught(new NotYetConnectedException());
     } else {
-      final int packetId = subscribeId.getAndIncrement();
-      if (subscribePromises.containsKey(packetId)) {
-        msg.setFailure(new MqttDuplicateIdException(MqttMessageType.SUBSCRIBE, packetId));
+      final int packetId = ((MqttMessageIdVariableHeader) msg.variableHeader()).messageId();
+      final Promise<Void> promise = releasePromises.remove(packetId);
+      if (promise == null) {
+        unexpectedPacketHandler.pubCompRead(ctx, packetId);
       } else {
-        final Promise<MqttQoS[]> promise = setTimer(msg);
-        final MqttSubscribeMessage message;
-        promise.addListener(new PromiseRemover<>(subscribePromises, packetId, promise));
-        // channel(cancel, failure) -> promise
-        channel.addListener(new PromiseCanceller<>(promise));
-        { // create mqtt message
-          List<MqttTopicSubscription> subscriptions = new ArrayList<>(msg.subscriptions().size());
-          for (MqttSubscription subscription : msg.subscriptions()) {
-            subscriptions.add(new MqttTopicSubscription(
-                subscription.topicFilter(), subscription.qos()));
-          }
-          message = new MqttSubscribeMessage(
-              SUBSCRIBE_HEADER,
-              MqttMessageIdVariableHeader.from(packetId),
-              new MqttSubscribePayload(subscriptions));
-        }
-        subscribePromises.put(packetId, promise);
-        writeAndTouch(ctx, message, channel);
+        promise.trySuccess(null);
       }
     }
   }
@@ -523,32 +571,6 @@ public class MqttClientHandler extends ChannelDuplexHandler {
     }
   }
 
-  public void write(ChannelHandlerContext ctx, MqttUnsubscribePromise msg, ChannelPromise channel)
-      throws Exception {
-
-    if (!isConnected()) {
-      msg.setFailure(new NotYetConnectedException());
-    } else {
-      final int packetId = unsubscribeId.getAndIncrement();
-      if (unsubscribePromises.containsKey(packetId)) {
-        msg.setFailure(new MqttDuplicateIdException(MqttMessageType.UNSUBSCRIBE, packetId));
-      } else {
-        final Promise<Void> promise = setTimer(msg);
-        final MqttUnsubscribeMessage message;
-        promise.addListener(new PromiseRemover<>(unsubscribePromises, packetId, promise));
-        // channel(cancel, failure) -> promise
-        channel.addListener(new PromiseCanceller<>(promise));
-        // create mqtt message
-        message = new MqttUnsubscribeMessage(
-            UNSUBSCRIBE_HEADER,
-            MqttMessageIdVariableHeader.from(packetId),
-            new MqttUnsubscribePayload(msg.topicFilters()));
-        unsubscribePromises.put(packetId, promise);
-        writeAndTouch(ctx, message, channel);
-      }
-    }
-  }
-
   public void unsubAckRead(ChannelHandlerContext ctx, MqttUnsubAckMessage msg) throws Exception {
     if (!isConnected()) {
       ctx.fireExceptionCaught(new NotYetConnectedException());
@@ -567,24 +589,6 @@ public class MqttClientHandler extends ChannelDuplexHandler {
     final Promise<Void> promise = pingPromises.poll();
     if (promise != null) {
       promise.trySuccess(null);
-    }
-  }
-
-  public void write(ChannelHandlerContext ctx, MqttPingPromise msg, ChannelPromise channel)
-      throws Exception {
-
-    if (!isConnected()) {
-      msg.setFailure(new NotYetConnectedException());
-    } else {
-      final Promise<Void> promise = setTimer(msg);
-      final MqttMessage message;
-      promise.addListener(new PromiseQueueRemover<>(pingPromises));
-      // channel(cancel, failure) -> promise
-      channel.addListener(new PromiseCanceller<>(promise));
-      // create mqtt message
-      message = new MqttMessage(PINGREQ_HEADER);
-      pingPromises.add(promise);
-      writeAndTouch(ctx, message, channel);
     }
   }
 

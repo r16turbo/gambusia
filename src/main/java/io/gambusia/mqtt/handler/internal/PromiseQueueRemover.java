@@ -16,11 +16,10 @@
 
 package io.gambusia.mqtt.handler.internal;
 
-import java.util.Queue;
-
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
 import io.netty.util.concurrent.Promise;
+import java.util.Queue;
 
 public class PromiseQueueRemover<V, P extends Promise<?>> implements FutureListener<V> {
 

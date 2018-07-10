@@ -16,15 +16,15 @@
 
 package io.gambusia.mqtt.handler.promise;
 
-import static io.gambusia.netty.util.Args.*;
-
-import java.util.concurrent.TimeUnit;
+import static io.gambusia.netty.util.Args.checkNotNull;
+import static io.gambusia.netty.util.Args.checkPositive;
 
 import io.netty.util.Timeout;
 import io.netty.util.Timer;
 import io.netty.util.TimerTask;
 import io.netty.util.concurrent.DefaultPromise;
 import io.netty.util.concurrent.EventExecutor;
+import java.util.concurrent.TimeUnit;
 
 public abstract class MqttPromise<V> extends DefaultPromise<V> implements TimerTask {
 

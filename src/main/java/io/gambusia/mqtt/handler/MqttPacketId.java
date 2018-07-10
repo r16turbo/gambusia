@@ -41,7 +41,8 @@ public final class MqttPacketId implements Serializable {
   }
 
   public int getAndIncrement() {
-    int prev, next;
+    int prev;
+    int next;
     do {
       next = (prev = id.get()) >= 0xFFFF ? 1 : prev + 1;
     } while (!id.compareAndSet(prev, next));

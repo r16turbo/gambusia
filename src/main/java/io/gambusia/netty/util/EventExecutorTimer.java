@@ -16,12 +16,7 @@
 
 package io.gambusia.netty.util;
 
-import static io.gambusia.netty.util.Args.*;
-import static io.netty.util.internal.logging.InternalLoggerFactory.*;
-
-import java.util.HashSet;
-import java.util.Set;
-import java.util.concurrent.TimeUnit;
+import static io.gambusia.netty.util.Args.checkNotNull;
 
 import io.netty.util.Timeout;
 import io.netty.util.Timer;
@@ -31,10 +26,18 @@ import io.netty.util.concurrent.EventExecutorGroup;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
 import io.netty.util.internal.logging.InternalLogger;
+import io.netty.util.internal.logging.InternalLoggerFactory;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 public class EventExecutorTimer implements Timer {
 
-  private static final InternalLogger logger = getInstance(EventExecutorTimer.class);
+  private static final InternalLogger logger;
+
+  static {
+    logger = InternalLoggerFactory.getInstance(EventExecutorTimer.class);
+  }
 
   private final IntObjectHashMap<Timeout> timeouts = new IntObjectHashMap<>();
   private final EventExecutorGroup executor;

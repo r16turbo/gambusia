@@ -16,16 +16,15 @@
 
 package io.gambusia.mqtt.handler.promise;
 
-import static io.gambusia.netty.util.Args.*;
-
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
+import static io.gambusia.netty.util.Args.checkNotNull;
 
 import io.gambusia.mqtt.MqttArticle;
 import io.gambusia.mqtt.MqttPublishFuture;
 import io.netty.handler.codec.mqtt.MqttQoS;
 import io.netty.util.Timeout;
 import io.netty.util.concurrent.EventExecutor;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 public class MqttPublishPromise extends MqttPromise<Void> implements MqttPublishFuture {
 

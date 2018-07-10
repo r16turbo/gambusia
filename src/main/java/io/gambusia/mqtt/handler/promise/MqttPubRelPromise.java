@@ -16,11 +16,10 @@
 
 package io.gambusia.mqtt.handler.promise;
 
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-
 import io.netty.util.Timeout;
 import io.netty.util.concurrent.EventExecutor;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 public class MqttPubRelPromise extends MqttPromise<Void> {
 

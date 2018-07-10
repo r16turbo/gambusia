@@ -16,16 +16,15 @@
 
 package io.gambusia.mqtt.handler.promise;
 
-import static io.gambusia.netty.util.Args.*;
+import static io.gambusia.netty.util.Args.checkNotContainsNull;
 
+import io.netty.util.Timeout;
+import io.netty.util.concurrent.EventExecutor;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-
-import io.netty.util.Timeout;
-import io.netty.util.concurrent.EventExecutor;
 
 public class MqttUnsubscribePromise extends MqttPromise<Void> {
 

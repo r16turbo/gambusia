@@ -16,16 +16,16 @@
 
 package io.gambusia.mqtt.handler.promise;
 
-import static io.gambusia.netty.util.Args.*;
-
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
+import static io.gambusia.netty.util.Args.checkNotEmpty;
+import static io.gambusia.netty.util.Args.checkNotNull;
 
 import io.gambusia.mqtt.MqttArticle;
 import io.gambusia.mqtt.MqttConnectResult;
 import io.gambusia.mqtt.handler.MqttPinger;
 import io.netty.util.Timeout;
 import io.netty.util.concurrent.EventExecutor;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 public class MqttConnectPromise extends MqttPromise<MqttConnectResult> {
 

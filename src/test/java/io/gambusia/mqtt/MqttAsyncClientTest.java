@@ -16,20 +16,11 @@
 
 package io.gambusia.mqtt;
 
-import static org.junit.jupiter.api.Assertions.*;
-
-import java.nio.charset.StandardCharsets;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.TimeUnit;
-
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.gambusia.mqtt.handler.MqttClientHandler;
 import io.netty.bootstrap.Bootstrap;
@@ -51,6 +42,17 @@ import io.netty.handler.logging.LoggingHandler;
 import io.netty.util.concurrent.Future;
 import io.netty.util.internal.logging.InternalLoggerFactory;
 import io.netty.util.internal.logging.Log4J2LoggerFactory;
+import java.nio.charset.StandardCharsets;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.TimeUnit;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
 
 class MqttAsyncClientTest {
 
@@ -122,7 +124,7 @@ class MqttAsyncClientTest {
     assertTrue(client.disconnect().sync().isSuccess());
   }
 
-  abstract class Test00 {
+  abstract class TestBase {
 
     @BeforeEach
     @AfterEach
@@ -154,7 +156,7 @@ class MqttAsyncClientTest {
   @Nested
   @Tag("keepalive")
   @DisplayName("KeepAlive")
-  class Test01_KeepAlive extends Test00 {
+  class KeepAlive extends TestBase {
 
     @Test
     @DisplayName("ping -> pong")
@@ -173,7 +175,7 @@ class MqttAsyncClientTest {
   @Nested
   @Tag("subscription")
   @DisplayName("Subscription")
-  class Test02_Subscription extends Test00 {
+  class Subscription extends TestBase {
 
     @Test
     @DisplayName("subscribe")
@@ -218,7 +220,7 @@ class MqttAsyncClientTest {
   @Nested
   @Tag("pubsub")
   @DisplayName("PubSub")
-  class Test03_PubSub extends Test00 {
+  class PubSub extends TestBase {
 
     @Test
     @DisplayName("pub0/sub0")
@@ -416,7 +418,7 @@ class MqttAsyncClientTest {
   @Nested
   @Tag("retransmit")
   @DisplayName("Retransmit")
-  class Test04_Retransmit extends Test00 {
+  class Retransmit extends TestBase {
 
     @Test
     @DisplayName("pub1/sub0")
@@ -625,7 +627,7 @@ class MqttAsyncClientTest {
 
   @Nested
   @DisplayName("finish")
-  class ZZZ {
+  class Zzz {
 
     @Test
     @DisplayName("finish")

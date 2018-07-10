@@ -16,20 +16,23 @@
 
 package io.gambusia.netty.util.concurrent;
 
-import static io.gambusia.netty.util.Args.*;
-import static io.netty.util.internal.logging.InternalLoggerFactory.*;
-
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
+import static io.gambusia.netty.util.Args.checkNotNull;
 
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.GenericFutureListener;
 import io.netty.util.concurrent.Promise;
 import io.netty.util.internal.logging.InternalLogger;
+import io.netty.util.internal.logging.InternalLoggerFactory;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 public class PromiseBarrier<V> implements GenericFutureListener<Future<V>> {
 
-  private static final InternalLogger logger = getInstance(PromiseBarrier.class);
+  private static final InternalLogger logger;
+
+  static {
+    logger = InternalLoggerFactory.getInstance(PromiseBarrier.class);
+  }
 
   private final AtomicInteger count = new AtomicInteger();
   private final AtomicReference<Throwable> cause = new AtomicReference<>();

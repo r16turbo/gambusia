@@ -16,7 +16,7 @@
 
 package io.gambusia.mqtt;
 
-import static io.gambusia.netty.util.Args.*;
+import static io.gambusia.netty.util.Args.checkNotEmpty;
 
 import io.netty.handler.codec.mqtt.MqttQoS;
 
