@@ -33,15 +33,10 @@ dependencies {
 The included code below is a very basic sample same behavior to [Eclipse Paho Java Client's Getting Started](https://github.com/eclipse/paho.mqtt.java/blob/master/README.md#getting-started).
 
 ```java
-import java.net.URI;
-import java.nio.charset.StandardCharsets;
-import java.util.concurrent.TimeUnit;
-
 import io.gambusia.mqtt.MqttAsyncClient;
 import io.gambusia.mqtt.MqttPublishFuture;
 import io.gambusia.mqtt.MqttSubscriber;
 import io.gambusia.mqtt.handler.MqttClientHandler;
-
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
@@ -58,6 +53,9 @@ import io.netty.handler.codec.mqtt.MqttEncoder;
 import io.netty.handler.codec.mqtt.MqttQoS;
 import io.netty.handler.logging.LoggingHandler;
 import io.netty.util.concurrent.Future;
+import java.net.URI;
+import java.nio.charset.StandardCharsets;
+import java.util.concurrent.TimeUnit;
 
 public class MqttPublishSample {
 
@@ -105,6 +103,8 @@ public class MqttPublishSample {
             System.out.println("Message released");
           }
         }
+      } else {
+        publish.article().release();
       }
       client.disconnect();
       channel.closeFuture().sync();
