@@ -16,7 +16,11 @@
 
 package io.gambusia.mqtt.handler;
 
+import static io.gambusia.mqtt.handler.MqttFixedHeaders.*;
+
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.handler.codec.mqtt.MqttMessage;
+import io.netty.handler.codec.mqtt.MqttMessageIdVariableHeader;
 import io.netty.handler.codec.mqtt.MqttMessageType;
 
 public class MqttUnexpectedPacketHandler {
@@ -30,6 +34,8 @@ public class MqttUnexpectedPacketHandler {
   }
 
   public void pubRelRead(ChannelHandlerContext ctx, int packetId) throws Exception {
+    ctx.channel().writeAndFlush(new MqttMessage(PUBCOMP_HEADER,
+        MqttMessageIdVariableHeader.from(packetId)));
     ctx.fireExceptionCaught(new MqttUnknownIdException(MqttMessageType.PUBREL, packetId));
   }
 
