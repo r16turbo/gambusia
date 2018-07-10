@@ -16,9 +16,12 @@
 
 package io.gambusia.mqtt.handler;
 
+import java.io.Serializable;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public final class MqttPacketId {
+public final class MqttPacketId implements Serializable {
+
+  private static final long serialVersionUID = -1608711409506773103L;
 
   private final AtomicInteger id;
 
