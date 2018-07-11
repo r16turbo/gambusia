@@ -25,8 +25,8 @@ import java.util.concurrent.TimeUnit;
 
 public class MqttPinger {
 
-  private final long timeout;
-  private final TimeUnit unit;
+  protected final long timeout;
+  protected final TimeUnit unit;
 
   public MqttPinger(long timeout, TimeUnit unit) {
     this.timeout = checkPositive(timeout, "timeout");
