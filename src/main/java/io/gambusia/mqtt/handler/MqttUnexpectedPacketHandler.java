@@ -36,7 +36,6 @@ public class MqttUnexpectedPacketHandler {
   public void pubRelRead(ChannelHandlerContext ctx, int packetId) throws Exception {
     ctx.channel().writeAndFlush(new MqttMessage(PUBCOMP_HEADER,
         MqttMessageIdVariableHeader.from(packetId)));
-    ctx.fireExceptionCaught(new MqttUnknownIdException(MqttMessageType.PUBREL, packetId));
   }
 
   public void pubCompRead(ChannelHandlerContext ctx, int packetId) throws Exception {
