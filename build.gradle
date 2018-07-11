@@ -15,7 +15,6 @@
  */
 
 plugins {
-    // Apply the java-library plugin to add support for Java Library
     id 'java-library'
     id 'maven-publish'
     id 'osgi'
@@ -23,12 +22,29 @@ plugins {
 
 ext {
     title = 'Gambusia/MQTT'
+
+    nettyVersion = '4.1.13.Final'
+    log4jVersion = '2.11.0'
+    junitVersion = '5.2.0'
 }
 
 group = 'io.gambusia'
 version = '0.11.1-SNAPSHOT'
-
 description = 'Netty-based MQTT v3.1.1 lightweight client'
+
+dependencies {
+    api("io.netty:netty-codec-mqtt:${nettyVersion}")
+
+    testImplementation("org.apache.logging.log4j:log4j-api:${log4jVersion}")
+    testImplementation("io.netty:netty-handler:${nettyVersion}")
+    testImplementation("org.junit.jupiter:junit-jupiter-api:${junitVersion}")
+    testRuntimeOnly("org.apache.logging.log4j:log4j-core:${log4jVersion}")
+    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:${junitVersion}")
+}
+
+repositories {
+    jcenter()
+}
 
 tasks.withType(JavaCompile) {
     sourceCompatibility = 1.8
@@ -36,45 +52,26 @@ tasks.withType(JavaCompile) {
     options.encoding = 'UTF-8'
 }
 
-dependencies {
-    // This dependency is exported to consumers, that is to say found on their compile classpath.
-    api 'io.netty:netty-codec-mqtt:4.1.13.Final'
-
-    // Use JUnit 5 test framework
-    testImplementation 'org.apache.logging.log4j:log4j-api:2.11.0'
-    testImplementation 'io.netty:netty-handler:4.1.13.Final'
-    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.2.0'
-    testRuntimeOnly 'org.apache.logging.log4j:log4j-core:2.11.0'
-    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.2.0'
-}
-
-// In this section you declare where to find the dependencies of your project
-repositories {
-    // Use jcenter for resolving your dependencies.
-    // You can declare any Maven/Ivy/file repository here.
-    jcenter()
-}
-
 test {
     useJUnitPlatform()
-}
-
-task sourcesJar(type: Jar, dependsOn: classes) {
-    classifier = 'sources'
-    from sourceSets.main.allSource
 }
 
 jar {
     manifest {
         instruction 'Implementation-Title', title
         instruction 'Implementation-Version', version
-        instruction 'Implementation-Vendor', 'Issey Yamakoshi'
         instruction 'Automatic-Module-Name', 'io.gambusia.mqtt'
 
         description project.description
         docURL 'https://github.com/r16turbo/gambusia'
         license 'http://www.apache.org/licenses/LICENSE-2.0.txt'
     }
+}
+
+task sourcesJar(type: Jar, dependsOn: classes) {
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    classifier = 'sources'
+    from sourceSets.main.allSource
 }
 
 publishing {
