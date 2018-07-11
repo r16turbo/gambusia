@@ -150,6 +150,7 @@ public class MqttClientHandler extends ChannelDuplexHandler {
     { // mark a promises as failure.
       PromiseBreaker breaker = new PromiseBreaker(new ClosedChannelException());
       breaker.accept(connectPromise);
+      connectPromise = null;
       publishPromises.values().forEach(breaker);
       releasePromises.values().forEach(breaker);
       receivePromises.values().forEach(breaker);
@@ -305,6 +306,7 @@ public class MqttClientHandler extends ChannelDuplexHandler {
       } else {
         final Promise<Void> promise = setTimer(msg);
         final MqttMessage message;
+        promise.addListener(new PromiseRemover<>(receivePromises, packetId, promise));
         // channel(cancel, failure) -> promise
         channel.addListener(new PromiseCanceller<>(promise));
         // create mqtt message
@@ -327,6 +329,7 @@ public class MqttClientHandler extends ChannelDuplexHandler {
       } else {
         final Promise<Void> promise = setTimer(msg);
         final MqttMessage message;
+        promise.addListener(new PromiseRemover<>(releasePromises, packetId, promise));
         // channel(cancel, failure) -> promise
         channel.addListener(new PromiseCanceller<>(promise));
         // create mqtt message
