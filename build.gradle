@@ -86,6 +86,7 @@ publishing {
                 name = title
                 description = project.description
                 url = 'https://github.com/r16turbo/gambusia'
+                inceptionYear = '2018'
                 licenses {
                     license {
                         name = 'Apache License, Version 2.0'
