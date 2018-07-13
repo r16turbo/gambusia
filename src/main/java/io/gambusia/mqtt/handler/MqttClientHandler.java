@@ -94,7 +94,7 @@ public class MqttClientHandler extends ChannelDuplexHandler {
   private final MqttSubscriber subscriber;
   private Timer timer;
 
-  private Timeout keepAlive = null;
+  protected Timeout keepAlive = null;
   private long lastWriteTimeNanos = 0;
   private final ChannelFutureListener writeListener = new LastWriteTimeUpdater();
 
@@ -130,6 +130,14 @@ public class MqttClientHandler extends ChannelDuplexHandler {
     this.publishId = checkNotNull(publishId, "publishId");
     this.unexpectedPacketHandler = checkNotNull(handler, "handler");
     this.timer = timer;
+  }
+
+  public Timer timer() {
+    return timer;
+  }
+
+  public long lastWriteTimeNanos() {
+    return lastWriteTimeNanos;
   }
 
   public boolean isConnected() {
@@ -600,7 +608,7 @@ public class MqttClientHandler extends ChannelDuplexHandler {
       promise.addListener(new KeepAliveCanceller());
       final MqttPinger pinger = promise.pinger();
       final TimeUnit unit = TimeUnit.SECONDS;
-      keepAlive = timer.newTimeout(new KeepAliveTask(ctx, pinger, delay, unit), delay, unit);
+      keepAlive = timer().newTimeout(new KeepAliveTask(ctx, pinger, delay, unit), delay, unit);
     }
   }
 
@@ -617,17 +625,8 @@ public class MqttClientHandler extends ChannelDuplexHandler {
   }
 
   protected <P extends MqttPromise<V>, V> P setTimer(P promise) {
-    promise.addListener(new TimeoutCanceller<>(promise.set(timer)));
+    promise.addListener(new TimeoutCanceller<>(promise.set(timer())));
     return promise;
-  }
-
-  private class KeepAliveCanceller implements FutureListener<MqttConnectResult> {
-    @Override
-    public void operationComplete(Future<MqttConnectResult> future) throws Exception {
-      if (!future.isSuccess()) {
-        stopKeepAlive();
-      }
-    }
   }
 
   private class LastWriteTimeUpdater implements ChannelFutureListener {
@@ -637,7 +636,18 @@ public class MqttClientHandler extends ChannelDuplexHandler {
     }
   }
 
-  private class KeepAliveTask implements TimerTask, FutureListener<Void> {
+  protected class KeepAliveCanceller implements FutureListener<MqttConnectResult> {
+    public KeepAliveCanceller() {}
+
+    @Override
+    public void operationComplete(Future<MqttConnectResult> connect) throws Exception {
+      if (!connect.isSuccess()) {
+        stopKeepAlive();
+      }
+    }
+  }
+
+  protected class KeepAliveTask implements TimerTask, FutureListener<Void> {
 
     private final ChannelHandlerContext ctx;
     private final MqttPinger pinger;
@@ -652,22 +662,30 @@ public class MqttClientHandler extends ChannelDuplexHandler {
     }
 
     @Override
-    public void run(Timeout timeout) throws Exception {
-      final long nextDelayNanos = unit.toNanos(delay) - (System.nanoTime() - lastWriteTimeNanos);
-      if (nextDelayNanos > 0) {
-        keepAlive = timeout.timer().newTimeout(this, nextDelayNanos, TimeUnit.NANOSECONDS);
-      } else {
-        keepAlive = timeout.timer().newTimeout(this, delay, unit);
+    public final void run(Timeout timeout) throws Exception {
+      check(delay, unit);
+    }
 
-        Promise<Void> ping = pinger.ping(ctx.executor()).addListener(this);
-        ctx.channel().writeAndFlush(ping).addListener(new PromiseCanceller<>(ping));
+    public void check(long delay, TimeUnit unit) {
+      final long nextDelayNanos = unit.toNanos(delay) - (System.nanoTime() - lastWriteTimeNanos());
+      if (nextDelayNanos > 0) {
+        keepAlive = timer().newTimeout(this, nextDelayNanos, TimeUnit.NANOSECONDS);
+      } else {
+        keepAlive = timer().newTimeout(this, delay, unit);
+
+        ping();
       }
     }
 
+    public final void ping() {
+      Promise<Void> ping = pinger.ping(ctx.executor()).addListener(this);
+      ctx.channel().writeAndFlush(ping).addListener(new PromiseCanceller<>(ping));
+    }
+
     @Override
-    public void operationComplete(Future<Void> future) throws Exception {
-      if (!future.isSuccess()) {
-        ctx.fireExceptionCaught(future.cause()).close();
+    public final void operationComplete(Future<Void> ping) throws Exception {
+      if (!ping.isSuccess()) {
+        ctx.fireExceptionCaught(ping.cause()).close();
       }
     }
   }
