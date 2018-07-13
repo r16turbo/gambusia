@@ -20,6 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.gambusia.mqtt.handler.MqttClientHandler;
@@ -90,38 +91,81 @@ class MqttAsyncClientTest {
     }
   };
 
-  @BeforeEach
-  void setUp() throws Exception {
-    ChannelFuture f = new Bootstrap()
-        .group(WORKER_GROUP).channel(NioSocketChannel.class)
-        .option(ChannelOption.SO_KEEPALIVE, true)
-        .option(ChannelOption.TCP_NODELAY, true)
-        .handler(handler).connect(HOST, PORT);
-    client.set(f.sync().channel());
-  }
+  @Nested
+  @Tag("connection")
+  class Connection {
 
-  @AfterEach
-  void tearDown() throws Exception {
-    client.channel().close();
-    client.channel().closeFuture().sync();
-  }
+    @BeforeEach
+    void setUp() throws Exception {
+      ChannelFuture f = new Bootstrap()
+          .group(WORKER_GROUP).channel(NioSocketChannel.class)
+          .option(ChannelOption.SO_KEEPALIVE, true)
+          .option(ChannelOption.TCP_NODELAY, true)
+          .handler(handler).connect(HOST, PORT);
+      client.set(f.sync().channel());
+    }
 
-  @Test
-  @DisplayName("connect")
-  void test01_connect() throws InterruptedException {
-    Future<MqttConnectResult> future = client.connect(true, 60, "test");
-    assertTrue(future.sync().isSuccess());
+    @AfterEach
+    void tearDown() throws Exception {
+      client.channel().close();
+      client.channel().closeFuture().sync();
+    }
 
-    MqttConnectResult result = future.getNow();
-    assertNotNull(result);
-    assertEquals(0, result.returnCode());
-    assertFalse(result.isSessionPresent());
-  }
+    @Test
+    @DisplayName("connect")
+    void connect() throws InterruptedException {
+      assertThrows(IllegalArgumentException.class, () -> {
+        client.connect(true, 0x0000 - 1, 60, "test");
+      });
+      assertThrows(IllegalArgumentException.class, () -> {
+        client.connect(true, 0xFFFF + 1, 60, "test");
+      });
+      assertThrows(IllegalArgumentException.class, () -> {
+        client.connect(true, 60, 0x0000 - 1, "test");
+      });
+      assertThrows(IllegalArgumentException.class, () -> {
+        client.connect(true, 60, 0xFFFF + 1, "test");
+      });
 
-  @Test
-  @DisplayName("disconnect")
-  void test02_disconnect() throws InterruptedException {
-    assertTrue(client.disconnect().sync().isSuccess());
+      Future<MqttConnectResult> future = client.connect(true, 60, 60, "test");
+      assertTrue(future.sync().isSuccess());
+
+      MqttConnectResult result = future.getNow();
+      assertNotNull(result);
+      assertEquals(0, result.returnCode());
+      assertFalse(result.isSessionPresent());
+    }
+
+    @Test
+    @DisplayName("disconnect")
+    void disconnect() throws InterruptedException {
+      assertTrue(client.connect(true, 60, 60, "test").sync().isSuccess());
+      assertTrue(client.disconnect().sync().isSuccess());
+    }
+
+    @Test
+    @DisplayName("ping")
+    void ping() throws InterruptedException {
+      assertTrue(client.connect(true, 60, 60, "test").sync().isSuccess());
+      assertTrue(client.ping().sync().isSuccess());
+      assertTrue(client.disconnect().sync().isSuccess());
+    }
+
+    @Test
+    @DisplayName("start pinger")
+    void start_pinger() throws InterruptedException {
+      assertTrue(client.connect(true, 2, 2, "test").sync().isSuccess());
+      TimeUnit.SECONDS.sleep(4);
+      assertTrue(client.channel().isActive());
+    }
+
+    @Test
+    @DisplayName("stop pinger")
+    void stop_pinger() throws InterruptedException {
+      assertTrue(client.connect(true, 2, 0, "test").sync().isSuccess());
+      TimeUnit.SECONDS.sleep(4);
+      assertFalse(client.channel().isActive());
+    }
   }
 
   abstract class TestBase {
@@ -143,7 +187,7 @@ class MqttAsyncClientTest {
           .option(ChannelOption.TCP_NODELAY, true)
           .handler(handler).connect(HOST, PORT);
       client.set(f.sync().channel());
-      client.connect(true, 2, "test").sync();
+      client.connect(true, 60, 60, "test").sync();
     }
 
     @AfterEach
@@ -154,32 +198,12 @@ class MqttAsyncClientTest {
   }
 
   @Nested
-  @Tag("keepalive")
-  @DisplayName("KeepAlive")
-  class KeepAlive extends TestBase {
-
-    @Test
-    @DisplayName("ping -> pong")
-    void test01_ping_pong() throws InterruptedException {
-      assertTrue(client.ping().sync().isSuccess());
-    }
-
-    @Test
-    @DisplayName("keepAlive")
-    void test02_keepAlive() throws InterruptedException {
-      TimeUnit.SECONDS.sleep(3);
-      assertTrue(client.ping().sync().isSuccess());
-    }
-  }
-
-  @Nested
   @Tag("subscription")
-  @DisplayName("Subscription")
   class Subscription extends TestBase {
 
     @Test
     @DisplayName("subscribe")
-    void test01_subscribe() throws InterruptedException {
+    void subscribe() throws InterruptedException {
       Future<MqttQoS[]> future = client.subscribe(
           MqttSubscription.qos2("test/+/2"),
           MqttSubscription.qos1("test/+/1"),
@@ -196,7 +220,7 @@ class MqttAsyncClientTest {
 
     @Test
     @DisplayName("subscribe failed")
-    void test02_subscribe_failed() throws InterruptedException {
+    void subscribe_failed() throws InterruptedException {
       assertFalse(client.subscribe(
           MqttSubscription.qos2("test/#/2"),
           MqttSubscription.qos1("test/#/1"),
@@ -206,25 +230,24 @@ class MqttAsyncClientTest {
 
     @Test
     @DisplayName("unsubscribe")
-    void test03_unsubscribe() throws InterruptedException {
+    void unsubscribe() throws InterruptedException {
       assertTrue(client.unsubscribe("test/2", "test/1", "test/0").sync().isSuccess());
     }
 
     @Test
     @DisplayName("unsubscribe failed")
-    void test04_unsubscribe_failed() throws InterruptedException {
+    void unsubscribe_failed() throws InterruptedException {
       assertFalse(client.unsubscribe("test/#/2", "test/#/1", "test/#/0").await().isSuccess());
     }
   }
 
   @Nested
   @Tag("pubsub")
-  @DisplayName("PubSub")
   class PubSub extends TestBase {
 
     @Test
     @DisplayName("pub0/sub0")
-    void test01_pub0_sub0() throws InterruptedException {
+    void pub0_sub0() throws InterruptedException {
       assertTrue(client.subscribe(MqttSubscription.qos0("test/0/0")).sync().isSuccess());
 
       MqttPublishFuture future = client.publish0(false, "test/0/0", payload());
@@ -244,7 +267,7 @@ class MqttAsyncClientTest {
 
     @Test
     @DisplayName("pub0/sub1")
-    void test02_pub0_sub1() throws InterruptedException {
+    void pub0_sub1() throws InterruptedException {
       assertTrue(client.subscribe(MqttSubscription.qos1("test/0/1")).sync().isSuccess());
 
       MqttPublishFuture future = client.publish0(false, "test/0/1", payload());
@@ -264,7 +287,7 @@ class MqttAsyncClientTest {
 
     @Test
     @DisplayName("pub0/sub2")
-    void test03_pub0_sub2() throws InterruptedException {
+    void pub0_sub2() throws InterruptedException {
       assertTrue(client.subscribe(MqttSubscription.qos2("test/0/2")).sync().isSuccess());
 
       MqttPublishFuture future = client.publish0(false, "test/0/2", payload());
@@ -284,7 +307,7 @@ class MqttAsyncClientTest {
 
     @Test
     @DisplayName("pub1/sub0")
-    void test04_pub1_sub0() throws InterruptedException {
+    void pub1_sub0() throws InterruptedException {
       assertTrue(client.subscribe(MqttSubscription.qos0("test/1/0")).sync().isSuccess());
 
       MqttPublishFuture future = client.publish1(false, "test/1/0", payload());
@@ -304,7 +327,7 @@ class MqttAsyncClientTest {
 
     @Test
     @DisplayName("pub1/sub1")
-    void test05_pub1_sub1() throws InterruptedException {
+    void pub1_sub1() throws InterruptedException {
       assertTrue(client.subscribe(MqttSubscription.qos1("test/1/1")).sync().isSuccess());
 
       MqttPublishFuture future = client.publish1(false, "test/1/1", payload());
@@ -326,7 +349,7 @@ class MqttAsyncClientTest {
 
     @Test
     @DisplayName("pub1/sub2")
-    void test06_pub1_sub2() throws InterruptedException {
+    void pub1_sub2() throws InterruptedException {
       assertTrue(client.subscribe(MqttSubscription.qos2("test/1/2")).sync().isSuccess());
 
       MqttPublishFuture future = client.publish1(false, "test/1/2", payload());
@@ -348,7 +371,7 @@ class MqttAsyncClientTest {
 
     @Test
     @DisplayName("pub2/sub0")
-    void test07_pub2_sub0() throws InterruptedException {
+    void pub2_sub0() throws InterruptedException {
       assertTrue(client.subscribe(MqttSubscription.qos0("test/2/0")).sync().isSuccess());
 
       MqttPublishFuture future = client.publish2(false, "test/2/0", payload());
@@ -369,7 +392,7 @@ class MqttAsyncClientTest {
 
     @Test
     @DisplayName("pub2/sub1")
-    void test08_pub2_sub1() throws InterruptedException {
+    void pub2_sub1() throws InterruptedException {
       assertTrue(client.subscribe(MqttSubscription.qos1("test/2/1")).sync().isSuccess());
 
       MqttPublishFuture future = client.publish2(false, "test/2/1", payload());
@@ -392,7 +415,7 @@ class MqttAsyncClientTest {
 
     @Test
     @DisplayName("pub2/sub2")
-    void test09_pub2_sub2() throws InterruptedException {
+    void pub2_sub2() throws InterruptedException {
       assertTrue(client.subscribe(MqttSubscription.qos2("test/2/2")).sync().isSuccess());
 
       MqttPublishFuture future = client.publish2(false, "test/2/2", payload());
@@ -417,12 +440,11 @@ class MqttAsyncClientTest {
 
   @Nested
   @Tag("retransmit")
-  @DisplayName("Retransmit")
   class Retransmit extends TestBase {
 
     @Test
     @DisplayName("pub1/sub0")
-    void test01_pub1_sub0() throws InterruptedException {
+    void pub1_sub0() throws InterruptedException {
       assertTrue(client.subscribe(MqttSubscription.qos0("test/1/0")).sync().isSuccess());
 
       MqttPublishFuture future = client.publish1(false, "test/1/0", payload().retain());
@@ -456,7 +478,7 @@ class MqttAsyncClientTest {
 
     @Test
     @DisplayName("pub1/sub1")
-    void test02_pub1_sub1() throws InterruptedException {
+    void pub1_sub1() throws InterruptedException {
       assertTrue(client.subscribe(MqttSubscription.qos1("test/1/1")).sync().isSuccess());
 
       MqttPublishFuture future = client.publish1(false, "test/1/1", payload().retain());
@@ -494,7 +516,7 @@ class MqttAsyncClientTest {
 
     @Test
     @DisplayName("pub1/sub2")
-    void test03_pub1_sub2() throws InterruptedException {
+    void pub1_sub2() throws InterruptedException {
       assertTrue(client.subscribe(MqttSubscription.qos2("test/1/2")).sync().isSuccess());
 
       MqttPublishFuture future = client.publish1(false, "test/1/2", payload().retain());
@@ -532,7 +554,7 @@ class MqttAsyncClientTest {
 
     @Test
     @DisplayName("pub2/sub0")
-    void test04_pub2_sub0() throws InterruptedException {
+    void pub2_sub0() throws InterruptedException {
       assertTrue(client.subscribe(MqttSubscription.qos0("test/2/0")).sync().isSuccess());
 
       MqttPublishFuture future = client.publish2(false, "test/2/0", payload().retain());
@@ -562,7 +584,7 @@ class MqttAsyncClientTest {
 
     @Test
     @DisplayName("pub2/sub1")
-    void test05_pub2_sub1() throws InterruptedException {
+    void pub2_sub1() throws InterruptedException {
       assertTrue(client.subscribe(MqttSubscription.qos1("test/2/1")).sync().isSuccess());
 
       MqttPublishFuture future = client.publish2(false, "test/2/1", payload().retain());
@@ -593,7 +615,7 @@ class MqttAsyncClientTest {
 
     @Test
     @DisplayName("pub2/sub2")
-    void test06_pub2_sub2() throws InterruptedException {
+    void pub2_sub2() throws InterruptedException {
       assertTrue(client.subscribe(MqttSubscription.qos2("test/2/2")).sync().isSuccess());
 
       MqttPublishFuture future = client.publish2(false, "test/2/2", payload().retain());
@@ -626,11 +648,10 @@ class MqttAsyncClientTest {
   }
 
   @Nested
-  @DisplayName("finish")
   class Zzz {
 
     @Test
     @DisplayName("finish")
-    void test99_finish() {}
+    void finish() {}
   }
 }

@@ -218,7 +218,6 @@ public class MqttClientHandler extends ChannelDuplexHandler {
                 msg.username(),
                 msg.password()));
       }
-      connectPromise.addListener(new KeepAliveCanceller());
       startKeepAlive(ctx, connectPromise);
       writeAndTouch(ctx, message, channel);
     }
@@ -596,10 +595,11 @@ public class MqttClientHandler extends ChannelDuplexHandler {
   }
 
   public void startKeepAlive(ChannelHandlerContext ctx, MqttConnectPromise promise) {
-    if (keepAlive == null) {
-      MqttPinger pinger = promise.pinger();
-      long delay = promise.keepAlive();
-      TimeUnit unit = TimeUnit.SECONDS;
+    final long delay = promise.pingDelay();
+    if (keepAlive == null && delay > 0 && !promise.isDone()) {
+      promise.addListener(new KeepAliveCanceller());
+      final MqttPinger pinger = promise.pinger();
+      final TimeUnit unit = TimeUnit.SECONDS;
       keepAlive = timer.newTimeout(new KeepAliveTask(ctx, pinger, delay, unit), delay, unit);
     }
   }

@@ -90,7 +90,7 @@ public class MqttPublishSample {
       Channel channel = b.connect(broker.getHost(), broker.getPort()).sync().channel();
       MqttAsyncClient client = new MqttAsyncClient(channel, 1, TimeUnit.SECONDS);
       System.out.println("Connecting to broker: " + broker);
-      client.connect(true, 60, clientId).sync();
+      client.connect(true, 60, 60, clientId).sync();
       System.out.println("Connected");
       System.out.println("Publishing message: " + content);
       ByteBuf payload = Unpooled.wrappedBuffer(content.getBytes(StandardCharsets.UTF_8));

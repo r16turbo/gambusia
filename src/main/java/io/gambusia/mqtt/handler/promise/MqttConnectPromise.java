@@ -18,6 +18,7 @@ package io.gambusia.mqtt.handler.promise;
 
 import static io.gambusia.netty.util.Args.checkNotEmpty;
 import static io.gambusia.netty.util.Args.checkNotNull;
+import static io.gambusia.netty.util.Args.checkUnsignedShort;
 
 import io.gambusia.mqtt.MqttArticle;
 import io.gambusia.mqtt.MqttConnectResult;
@@ -33,6 +34,7 @@ public class MqttConnectPromise extends MqttPromise<MqttConnectResult> {
   private final int protocolLevel;
   private final boolean cleanSession;
   private final int keepAlive;
+  private final int pingDelay;
   private final MqttPinger pinger;
   private final String clientId;
   private final MqttArticle will;
@@ -41,14 +43,15 @@ public class MqttConnectPromise extends MqttPromise<MqttConnectResult> {
 
   public MqttConnectPromise(EventExecutor executor, long timeout, TimeUnit unit,
       String protocolName, int protocolLevel,
-      boolean cleanSession, int keepAlive, MqttPinger pinger,
+      boolean cleanSession, int keepAlive, int pingDelay, MqttPinger pinger,
       String clientId, MqttArticle will, String username, byte[] password) {
 
     super(executor, timeout, unit);
     this.protocolName = checkNotEmpty(protocolName, "protocolName");
     this.protocolLevel = protocolLevel;
     this.cleanSession = cleanSession;
-    this.keepAlive = keepAlive;
+    this.keepAlive = checkUnsignedShort(keepAlive, "keepAlive");
+    this.pingDelay = checkUnsignedShort(pingDelay, "pingDelay");
     this.pinger = checkNotNull(pinger, "pinger");
     this.clientId = clientId;
     this.will = will;
@@ -70,6 +73,10 @@ public class MqttConnectPromise extends MqttPromise<MqttConnectResult> {
 
   public int keepAlive() {
     return keepAlive;
+  }
+
+  public int pingDelay() {
+    return pingDelay;
   }
 
   public MqttPinger pinger() {

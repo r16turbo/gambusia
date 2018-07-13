@@ -67,4 +67,11 @@ public abstract class Args {
     }
     return array;
   }
+
+  public static int checkUnsignedShort(int i, String name) {
+    if ((i & 0xFFFF0000) != 0) {
+      throw new IllegalArgumentException(name + ": " + i + " (expected: unsigned short)");
+    }
+    return i;
+  }
 }
