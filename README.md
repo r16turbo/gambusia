@@ -8,7 +8,7 @@ The Gambusia/MQTT is an Netty-based MQTT v3.1.1 client library that run on the J
 
 The Gambusia/MQTT aims to implement minimal MQTT client functionality based on Netty.
 We only implement the mandatory specifications of MQTT that doesn't exist in Netty.
-So we don't implement features such as topic filters and persistence.
+So we don't implement features such as auto reconnect and persistence.
 Also, the implementor decides an ambiguous implementation (e.g. retransmission) in the protocol sequence.
 
 ## Using the Gambusia/MQTT
