@@ -81,7 +81,7 @@ public final class MqttTopics {
     return true;
   }
 
-  public static boolean isMatched(CharSequence filter, CharSequence topic) {
+  public static boolean matches(CharSequence filter, CharSequence topic) {
 
     int filterIndex = 0;
     final int filterLength = filter.length();
