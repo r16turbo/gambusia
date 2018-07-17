@@ -28,11 +28,7 @@ public final class MqttTopics {
 
   public static boolean isValidLength(CharSequence topic) {
     final int length = topic.toString().getBytes(StandardCharsets.UTF_8).length;
-    if (length < MIN_BYTES || length > MAX_BYTES) {
-      return false;
-    } else {
-      return true;
-    }
+    return length >= MIN_BYTES && length <= MAX_BYTES;
   }
 
   public static boolean isValidTopic(CharSequence topic) {
@@ -47,7 +43,6 @@ public final class MqttTopics {
         return false;
       }
     }
-
     return true;
   }
 
@@ -77,7 +72,6 @@ public final class MqttTopics {
         }
       }
     }
-
     return true;
   }
 
@@ -90,23 +84,27 @@ public final class MqttTopics {
     final int topicLength = topic.length();
 
     while (filterIndex < filterLength && topicIndex < topicLength) {
-      final char filterChar = filter.charAt(filterIndex);
-      final char topicChar = topic.charAt(topicIndex);
+      final char filterChar = filter.charAt(filterIndex++);
+      final char topicChar = topic.charAt(topicIndex++);
       if (filterChar == '#') {
         // skip to end of topic
-        topicIndex = topicLength - 1;
+        topicIndex = topicLength;
+        break;
       } else if (filterChar == '+') {
         // skip to next separator or end of topic
-        int nextIndex = topicIndex + 1;
-        while (nextIndex < topicLength && topic.charAt(nextIndex) != '/') {
-          nextIndex = ++topicIndex + 1;
+        if (topicChar != '/') {
+          while (topicIndex < topicLength && topic.charAt(topicIndex) != '/') {
+            topicIndex++;
+          }
+        } else if (filterIndex < filterLength) {
+          filterIndex++;
+        } else {
+          break;
         }
       } else if (filterChar != topicChar) {
         // characters mismatch
         return false;
       }
-      filterIndex++;
-      topicIndex++;
     }
 
     switch (filterLength - filterIndex) {
@@ -128,10 +126,10 @@ public final class MqttTopics {
     }
   }
 
-  public static boolean isValidShareName(CharSequence shareName) {
-    final int length = shareName.length();
+  public static boolean isValidShareName(CharSequence name) {
+    final int length = name.length();
     for (int index = 0; index < length; index++) {
-      final char current = shareName.charAt(index);
+      final char current = name.charAt(index);
       if (current == NUL || current == '/' || current == '#' || current == '+') {
         return false;
       }
@@ -139,8 +137,8 @@ public final class MqttTopics {
     return true;
   }
 
-  public static String toSharedFilter(CharSequence shareName, CharSequence filter) {
-    return new StringBuilder(8 + shareName.length() + filter.length())
-        .append("$share/").append(shareName).append('/').append(filter).toString();
+  public static String toSharedFilter(CharSequence name, CharSequence filter) {
+    return new StringBuilder(8 + name.length() + filter.length())
+        .append("$share/").append(name).append('/').append(filter).toString();
   }
 }
