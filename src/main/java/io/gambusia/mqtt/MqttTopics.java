@@ -75,6 +75,26 @@ public final class MqttTopics {
     return true;
   }
 
+  public static <T extends CharSequence> T checkTopic(T topic, String name)
+      throws NullPointerException, IllegalArgumentException {
+    if (topic == null) {
+      throw new NullPointerException(name);
+    } else if (!isValidTopic(topic)) {
+      throw new IllegalArgumentException(name);
+    }
+    return topic;
+  }
+
+  public static <F extends CharSequence> F checkFilter(F filter, String name)
+      throws NullPointerException, IllegalArgumentException {
+    if (filter == null) {
+      throw new NullPointerException(name);
+    } else if (!isValidFilter(filter)) {
+      throw new IllegalArgumentException(name);
+    }
+    return filter;
+  }
+
   public static boolean matches(CharSequence filter, CharSequence topic) {
 
     int filterIndex = 0;
@@ -126,10 +146,10 @@ public final class MqttTopics {
     }
   }
 
-  public static boolean isValidShareName(CharSequence name) {
-    final int length = name.length();
+  public static boolean isValidShareName(CharSequence shareName) {
+    final int length = shareName.length();
     for (int index = 0; index < length; index++) {
-      final char current = name.charAt(index);
+      final char current = shareName.charAt(index);
       if (current == NUL || current == '/' || current == '#' || current == '+') {
         return false;
       }
@@ -137,8 +157,18 @@ public final class MqttTopics {
     return true;
   }
 
-  public static String toSharedFilter(CharSequence name, CharSequence filter) {
-    return new StringBuilder(8 + name.length() + filter.length())
-        .append("$share/").append(name).append('/').append(filter).toString();
+  public static <S extends CharSequence> S checkShareName(S shareName, String name)
+      throws NullPointerException, IllegalArgumentException {
+    if (shareName == null) {
+      throw new NullPointerException(name);
+    } else if (!isValidShareName(shareName)) {
+      throw new IllegalArgumentException(name);
+    }
+    return shareName;
+  }
+
+  public static String toSharedFilter(CharSequence shareName, CharSequence filter) {
+    return new StringBuilder(8 + shareName.length() + filter.length())
+        .append("$share/").append(shareName).append('/').append(filter).toString();
   }
 }
