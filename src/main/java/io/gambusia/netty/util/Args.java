@@ -16,7 +16,8 @@
 
 package io.gambusia.netty.util;
 
-public abstract class Args {
+public final class Args {
+  private Args() {}
 
   public static <T> T checkNotNull(T arg, String text) {
     return io.netty.util.internal.ObjectUtil.checkNotNull(arg, text);
