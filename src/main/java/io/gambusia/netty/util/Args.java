@@ -70,7 +70,7 @@ public abstract class Args {
 
   public static int checkUnsignedShort(int i, String name) {
     if ((i & 0xFFFF0000) != 0) {
-      throw new IllegalArgumentException(name + ": " + i + " (expected: unsigned short)");
+      throw new IllegalArgumentException(name + ": " + i + " (expected: >= 0 && <= 65535)");
     }
     return i;
   }
