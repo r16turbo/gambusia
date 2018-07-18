@@ -40,7 +40,7 @@ public final class MqttTopics {
     for (int index = 0; index < length; index++) {
       final char current = topic.charAt(index);
       if (current == NUL || current == '#' || current == '+') {
-        return false;
+        return false; // 'NUL' or wildcard characters
       }
     }
     return true;
@@ -55,7 +55,7 @@ public final class MqttTopics {
     for (int index = 0; index < length; index++) {
       final char current = filter.charAt(index);
       if (current == NUL) {
-        return false;
+        return false; // current is 'NUL'
       } else if (current == '#' && ((index > 0 && filter.charAt(index - 1) != '/')
           || (index + 1 < length))) {
         return false; // (previous is not none or '/') or (next is not none)
@@ -143,7 +143,7 @@ public final class MqttTopics {
     for (int index = 0; index < length; index++) {
       final char current = shareName.charAt(index);
       if (current == NUL || current == '/' || current == '#' || current == '+') {
-        return false;
+        return false; // 'NUL' or topic level separator, wildcard characters
       }
     }
     return true;
