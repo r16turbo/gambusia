@@ -56,20 +56,12 @@ public final class MqttTopics {
       final char current = filter.charAt(index);
       if (current == NUL) {
         return false;
-      } else if (current == '#') {
-        if ((index <= 0 || filter.charAt(index - 1) == '/')
-            && (index + 1 >= length)) {
-          // valid: (previous is none or '/') and (next is none)
-        } else {
-          return false;
-        }
-      } else if (current == '+') {
-        if ((index <= 0 || filter.charAt(index - 1) == '/')
-            && (index + 1 >= length || filter.charAt(index + 1) == '/')) {
-          // valid: (previous is none or '/') and (next is none or '/')
-        } else {
-          return false;
-        }
+      } else if (current == '#' && ((index > 0 && filter.charAt(index - 1) != '/')
+          || (index + 1 < length))) {
+        return false; // (previous is not none or '/') or (next is not none)
+      } else if (current == '+' && ((index > 0 && filter.charAt(index - 1) != '/')
+          || (index + 1 < length && filter.charAt(index + 1) != '/'))) {
+        return false; // (previous is not none or '/') or (next is not none or '/')
       }
     }
     return true;
