@@ -1,15 +1,15 @@
 # Gambusia/MQTT Java Client
 [![Build Status](https://travis-ci.com/r16turbo/gambusia.svg?branch=master)](https://travis-ci.com/r16turbo/gambusia)
 
-The Gambusia/MQTT is an Netty-based MQTT v3.1.1 client library that run on the JVM.
+The Gambusia/MQTT is an Netty-based MQTT v3.1.1 Client Library that run on the JVM.
 
 
 ## Concepts
 
-The Gambusia/MQTT aims to implement minimal MQTT client functionality based on Netty.
-We only implement the mandatory specifications of MQTT that doesn't exist in Netty.
-So we don't implement features such as auto reconnect and persistence.
-Also, the implementor decides an ambiguous implementation (e.g. retransmission) in the protocol sequence.
+The Gambusia/MQTT aims to implement Minimal MQTT Client Library based on Netty.
+It implements the mandatory specification of MQTT which does not exist in Netty.
+Therefore, don't plan to implement features such as automatic reconnection and persistent.
+Ambiguous sequences (e.g. retransmission) should be implemented by developers.
 
 ## Using the Gambusia/MQTT
 
