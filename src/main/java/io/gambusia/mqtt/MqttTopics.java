@@ -107,9 +107,11 @@ public final class MqttTopics {
             topicIndex++;
           }
         } else if (filterIndex < filterLength) {
+          // if filter is valid, topic level matches
           filterIndex++;
         } else {
-          break;
+          // topic level mismatch
+          return false;
         }
       } else if (filterChar != topicChar) {
         // characters mismatch

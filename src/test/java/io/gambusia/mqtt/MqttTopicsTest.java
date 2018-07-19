@@ -102,6 +102,9 @@ class MqttTopicsTest {
     assertFalse(matches("sport/tennis/+/#", "sport/tennis"));
     assertFalse(matches("sport/tennis/?/#", "sport/tennis/"));
     assertFalse(matches("sport/tennis/+/?", "sport/tennis/"));
+
+    assertTrue(matches("sport/tennis/+/", "sport/tennis//"));
+    assertFalse(matches("sport/tennis/+", "sport/tennis//"));
   }
 
   @Test
