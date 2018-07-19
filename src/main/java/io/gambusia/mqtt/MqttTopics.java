@@ -32,11 +32,10 @@ public final class MqttTopics {
   }
 
   public static boolean isValidTopic(CharSequence topic) {
-    if (!isValidLength(topic)) {
-      return false;
-    }
-
     final int length = topic.length();
+    if (length < 1) {
+      return false; // no character
+    }
     for (int index = 0; index < length; index++) {
       final char current = topic.charAt(index);
       if (current == NUL || current == '#' || current == '+') {
@@ -47,11 +46,10 @@ public final class MqttTopics {
   }
 
   public static boolean isValidFilter(CharSequence filter) {
-    if (!isValidLength(filter)) {
-      return false;
-    }
-
     final int length = filter.length();
+    if (length < 1) {
+      return false; // no character
+    }
     for (int index = 0; index < length; index++) {
       final char current = filter.charAt(index);
       if (current == NUL) {
@@ -140,6 +138,9 @@ public final class MqttTopics {
 
   public static boolean isValidShareName(CharSequence shareName) {
     final int length = shareName.length();
+    if (length < 1) {
+      return false; // no character
+    }
     for (int index = 0; index < length; index++) {
       final char current = shareName.charAt(index);
       if (current == NUL || current == '/' || current == '#' || current == '+') {

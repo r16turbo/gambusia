@@ -108,6 +108,7 @@ class MqttTopicsTest {
   void testSharedFilter() {
     assertChecker(shareNameChecker, "consumer1", "shareName");
     assertNullPointerException(shareNameChecker, (CharSequence) null, "shareName");
+    assertIllegalArgumentException(shareNameChecker, "", "shareName");
     assertIllegalArgumentException(shareNameChecker, "consumer\u0000", "shareName");
     assertIllegalArgumentException(shareNameChecker, "consumer/", "shareName");
     assertIllegalArgumentException(shareNameChecker, "consumer#", "shareName");
