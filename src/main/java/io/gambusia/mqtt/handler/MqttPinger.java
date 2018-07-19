@@ -16,8 +16,8 @@
 
 package io.gambusia.mqtt.handler;
 
-import static io.gambusia.netty.util.Args.checkNotNull;
-import static io.gambusia.netty.util.Args.checkPositive;
+import static io.gambusia.netty.util.Args.requireNonNull;
+import static io.gambusia.netty.util.Args.requirePositive;
 
 import io.gambusia.mqtt.handler.promise.MqttPingPromise;
 import io.netty.util.concurrent.EventExecutor;
@@ -29,8 +29,8 @@ public class MqttPinger {
   protected final TimeUnit unit;
 
   public MqttPinger(long timeout, TimeUnit unit) {
-    this.timeout = checkPositive(timeout, "timeout");
-    this.unit = checkNotNull(unit, "unit");
+    this.timeout = requirePositive(timeout, "timeout");
+    this.unit = requireNonNull(unit, "unit");
   }
 
   protected MqttPingPromise ping(EventExecutor executor) {

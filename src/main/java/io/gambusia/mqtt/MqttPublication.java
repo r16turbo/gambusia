@@ -16,8 +16,8 @@
 
 package io.gambusia.mqtt;
 
-import static io.gambusia.netty.util.Args.checkNotEmpty;
-import static io.gambusia.netty.util.Args.checkNotNull;
+import static io.gambusia.netty.util.Args.requireNonEmpty;
+import static io.gambusia.netty.util.Args.requireNonNull;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufHolder;
@@ -39,9 +39,9 @@ public class MqttPublication implements ByteBufHolder, AutoCloseable {
     this.duplicate = duplicate;
     this.qos = qos;
     this.retain = retain;
-    this.topic = checkNotEmpty(topic, "topic");
+    this.topic = requireNonEmpty(topic, "topic");
     this.packetId = packetId;
-    this.payload = checkNotNull(payload, "payload");
+    this.payload = requireNonNull(payload, "payload");
   }
 
   public boolean isDuplicate() {

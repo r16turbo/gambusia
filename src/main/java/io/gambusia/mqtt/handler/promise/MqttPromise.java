@@ -16,8 +16,8 @@
 
 package io.gambusia.mqtt.handler.promise;
 
-import static io.gambusia.netty.util.Args.checkNotNull;
-import static io.gambusia.netty.util.Args.checkPositive;
+import static io.gambusia.netty.util.Args.requireNonNull;
+import static io.gambusia.netty.util.Args.requirePositive;
 
 import io.netty.util.Timeout;
 import io.netty.util.Timer;
@@ -33,8 +33,8 @@ public abstract class MqttPromise<V> extends DefaultPromise<V> implements TimerT
 
   protected MqttPromise(EventExecutor executor, long timeout, TimeUnit unit) {
     super(executor);
-    this.timeout = checkPositive(timeout, "timeout");
-    this.unit = checkNotNull(unit, "unit");
+    this.timeout = requirePositive(timeout, "timeout");
+    this.unit = requireNonNull(unit, "unit");
   }
 
   public Timeout set(Timer timer) {

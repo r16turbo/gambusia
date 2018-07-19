@@ -28,6 +28,10 @@ import org.junit.jupiter.api.Test;
 
 class MqttTopicsTest {
 
+  static final Checker<CharSequence> topicChecker = MqttTopics::requireValidTopic;
+  static final Checker<CharSequence> filterChecker = MqttTopics::requireValidFilter;
+  static final Checker<CharSequence> shareNameChecker = MqttTopics::requireValidShareName;
+
   @Test
   void testMultiLevelWildcard() {
     // http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.html
@@ -36,9 +40,9 @@ class MqttTopicsTest {
     assertTrue(matches("sport/tennis/player1/#", "sport/tennis/player1/ranking"));
     assertTrue(matches("sport/tennis/player1/#", "sport/tennis/player1/score/wimbledon"));
 
-    assertChecker(MqttTopics::checkFilter, "sport/tennis/#", "filter");
-    assertIllegalArgumentException(MqttTopics::checkFilter, "sport/tennis#", "filter");
-    assertIllegalArgumentException(MqttTopics::checkFilter, "sport/tennis/#/ranking", "filter");
+    assertChecker(filterChecker, "sport/tennis/#", "filter");
+    assertIllegalArgumentException(filterChecker, "sport/tennis#", "filter");
+    assertIllegalArgumentException(filterChecker, "sport/tennis/#/ranking", "filter");
   }
 
   @Test
@@ -52,10 +56,10 @@ class MqttTopicsTest {
     assertFalse(matches("sport/+", "sport"));
     assertFalse(matches("sport/+", "sport/"));
 
-    assertChecker(MqttTopics::checkFilter, "+", "filter");
-    assertChecker(MqttTopics::checkFilter, "+/tennis/#", "filter");
-    assertIllegalArgumentException(MqttTopics::checkFilter, "sport+", "filter");
-    assertChecker(MqttTopics::checkFilter, "sport/+/player1", "filter");
+    assertChecker(filterChecker, "+", "filter");
+    assertChecker(filterChecker, "+/tennis/#", "filter");
+    assertIllegalArgumentException(filterChecker, "sport+", "filter");
+    assertChecker(filterChecker, "sport/+/player1", "filter");
 
     assertTrue(matches("+/+", "/finance"));
     assertTrue(matches("/+", "/finance"));
@@ -64,31 +68,31 @@ class MqttTopicsTest {
 
   @Test
   void testTopic() {
-    assertChecker(MqttTopics::checkTopic, "sport/tennis/player1", "topic");
-    assertChecker(MqttTopics::checkTopic, "sport/tennis/player1/ranking", "topic");
-    assertChecker(MqttTopics::checkTopic, "sport/tennis/player1/score/wimbledon", "topic");
-    assertChecker(MqttTopics::checkTopic, "sport", "topic");
-    assertChecker(MqttTopics::checkTopic, "sport/", "topic");
-    assertChecker(MqttTopics::checkTopic, "/finance", "topic");
+    assertChecker(topicChecker, "sport/tennis/player1", "topic");
+    assertChecker(topicChecker, "sport/tennis/player1/ranking", "topic");
+    assertChecker(topicChecker, "sport/tennis/player1/score/wimbledon", "topic");
+    assertChecker(topicChecker, "sport", "topic");
+    assertChecker(topicChecker, "sport/", "topic");
+    assertChecker(topicChecker, "/finance", "topic");
 
-    assertNullPointerException(MqttTopics::checkTopic, (CharSequence) null, "topic");
-    assertIllegalArgumentException(MqttTopics::checkTopic, "", "topic");
-    assertIllegalArgumentException(MqttTopics::checkTopic, "\u0000", "topic");
-    assertIllegalArgumentException(MqttTopics::checkTopic, "sport/tennis/#", "topic");
-    assertIllegalArgumentException(MqttTopics::checkTopic, "+", "topic");
-    assertIllegalArgumentException(MqttTopics::checkTopic, "+/tennis/#", "topic");
-    assertIllegalArgumentException(MqttTopics::checkTopic, "sport/+/player1", "topic");
+    assertNullPointerException(topicChecker, (CharSequence) null, "topic");
+    assertIllegalArgumentException(topicChecker, "", "topic");
+    assertIllegalArgumentException(topicChecker, "\u0000", "topic");
+    assertIllegalArgumentException(topicChecker, "sport/tennis/#", "topic");
+    assertIllegalArgumentException(topicChecker, "+", "topic");
+    assertIllegalArgumentException(topicChecker, "+/tennis/#", "topic");
+    assertIllegalArgumentException(topicChecker, "sport/+/player1", "topic");
   }
 
   @Test
   void testFilter() {
-    assertChecker(MqttTopics::checkFilter, "#", "filter");
+    assertChecker(filterChecker, "#", "filter");
 
-    assertNullPointerException(MqttTopics::checkFilter, (CharSequence) null, "filter");
-    assertIllegalArgumentException(MqttTopics::checkFilter, "", "filter");
-    assertIllegalArgumentException(MqttTopics::checkFilter, "\u0000", "filter");
-    assertIllegalArgumentException(MqttTopics::checkFilter, "#?", "filter");
-    assertIllegalArgumentException(MqttTopics::checkFilter, "+?", "filter");
+    assertNullPointerException(filterChecker, (CharSequence) null, "filter");
+    assertIllegalArgumentException(filterChecker, "", "filter");
+    assertIllegalArgumentException(filterChecker, "\u0000", "filter");
+    assertIllegalArgumentException(filterChecker, "#?", "filter");
+    assertIllegalArgumentException(filterChecker, "+?", "filter");
 
     assertTrue(matches("sport/tennis/player1/#", "sport/tennis/player1/"));
     assertFalse(matches("sport/football/player1/#", "sport/tennis/player1"));
@@ -102,12 +106,12 @@ class MqttTopicsTest {
 
   @Test
   void testSharedFilter() {
-    assertChecker(MqttTopics::checkShareName, "consumer1", "shareName");
-    assertNullPointerException(MqttTopics::checkShareName, (CharSequence) null, "shareName");
-    assertIllegalArgumentException(MqttTopics::checkShareName, "consumer\u0000", "shareName");
-    assertIllegalArgumentException(MqttTopics::checkShareName, "consumer/", "shareName");
-    assertIllegalArgumentException(MqttTopics::checkShareName, "consumer#", "shareName");
-    assertIllegalArgumentException(MqttTopics::checkShareName, "consumer+", "shareName");
+    assertChecker(shareNameChecker, "consumer1", "shareName");
+    assertNullPointerException(shareNameChecker, (CharSequence) null, "shareName");
+    assertIllegalArgumentException(shareNameChecker, "consumer\u0000", "shareName");
+    assertIllegalArgumentException(shareNameChecker, "consumer/", "shareName");
+    assertIllegalArgumentException(shareNameChecker, "consumer#", "shareName");
+    assertIllegalArgumentException(shareNameChecker, "consumer+", "shareName");
 
     assertEquals("$share/consumer1/+/tennis/#", toSharedFilter("consumer1", "+/tennis/#"));
   }

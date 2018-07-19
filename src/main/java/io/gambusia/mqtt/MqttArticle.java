@@ -16,8 +16,8 @@
 
 package io.gambusia.mqtt;
 
-import static io.gambusia.netty.util.Args.checkNotEmpty;
-import static io.gambusia.netty.util.Args.checkNotNull;
+import static io.gambusia.netty.util.Args.requireNonEmpty;
+import static io.gambusia.netty.util.Args.requireNonNull;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufHolder;
@@ -32,10 +32,10 @@ public class MqttArticle implements ByteBufHolder {
   private final ByteBuf payload;
 
   public MqttArticle(MqttQoS qos, boolean retain, String topic, ByteBuf payload) {
-    this.qos = checkNotNull(qos, "qos");
+    this.qos = requireNonNull(qos, "qos");
     this.retain = retain;
-    this.topic = checkNotEmpty(topic, "topic");
-    this.payload = checkNotNull(payload, "payload");
+    this.topic = requireNonEmpty(topic, "topic");
+    this.payload = requireNonNull(payload, "payload");
   }
 
   public MqttQoS qos() {

@@ -16,7 +16,7 @@
 
 package io.gambusia.netty.util.concurrent;
 
-import static io.gambusia.netty.util.Args.checkNotNull;
+import static io.gambusia.netty.util.Args.requireNonNull;
 
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.GenericFutureListener;
@@ -45,7 +45,7 @@ public class PromiseBarrier<V> implements GenericFutureListener<Future<V>> {
   }
 
   public PromiseBarrier(Promise<V> promise, V result) {
-    this.promise = checkNotNull(promise, "promise");
+    this.promise = requireNonNull(promise, "promise");
     this.result = result;
   }
 

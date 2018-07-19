@@ -16,7 +16,7 @@
 
 package io.gambusia.mqtt.handler.promise;
 
-import static io.gambusia.netty.util.Args.checkNotContainsNull;
+import static io.gambusia.netty.util.Args.requireNonContainsNull;
 
 import io.netty.util.Timeout;
 import io.netty.util.concurrent.EventExecutor;
@@ -34,7 +34,7 @@ public class MqttUnsubscribePromise extends MqttPromise<Void> {
       String... topicFilters) {
     super(executor, timeout, unit);
     this.topicFilters = Collections.unmodifiableList(
-        Arrays.asList(checkNotContainsNull(topicFilters, "topicFilters")));
+        Arrays.asList(requireNonContainsNull(topicFilters, "topicFilters")));
   }
 
   public List<String> topicFilters() {

@@ -19,71 +19,71 @@ package io.gambusia.netty.util;
 public final class Args {
   private Args() {}
 
-  public static int checkPositive(int i, String name) {
+  public static int requirePositive(int i, String name) {
     if (i <= 0) {
       throw new IllegalArgumentException(String.format("%s: %d (expected: > 0)", name, i));
     }
     return i;
   }
 
-  public static long checkPositive(long i, String name) {
+  public static long requirePositive(long i, String name) {
     if (i <= 0) {
       throw new IllegalArgumentException(String.format("%s: %d (expected: > 0)", name, i));
     }
     return i;
   }
 
-  public static int checkPositiveOrZero(int i, String name) {
+  public static int requirePositiveOrZero(int i, String name) {
     if (i < 0) {
       throw new IllegalArgumentException(String.format("%s: %d (expected: >= 0)", name, i));
     }
     return i;
   }
 
-  public static long checkPositiveOrZero(long i, String name) {
+  public static long requirePositiveOrZero(long i, String name) {
     if (i < 0) {
       throw new IllegalArgumentException(String.format("%s: %d (expected: >= 0)", name, i));
     }
     return i;
   }
 
-  public static int checkUnsignedShort(int i, String name) {
+  public static int requireUnsignedShort(int i, String name) {
     if ((i & 0xFFFF0000) != 0) {
       throw new IllegalArgumentException(String.format("%s: %d (expected: 0–65535)", name, i));
     }
     return i;
   }
 
-  public static long checkUnsignedInt(long i, String name) {
+  public static long requireUnsignedInt(long i, String name) {
     if ((i & 0xFFFFFFFF00000000L) != 0) {
       throw new IllegalArgumentException(String.format("%s: %d (expected: 0–4294967295)", name, i));
     }
     return i;
   }
 
-  public static <T> T checkNotNull(T arg, String text) {
+  public static <T> T requireNonNull(T arg, String text) {
     if (arg == null) {
       throw new NullPointerException(text);
     }
     return arg;
   }
 
-  public static String checkNotEmpty(String arg, String name) {
-    if (checkNotNull(arg, name).isEmpty()) {
+  public static String requireNonEmpty(String arg, String name) {
+    if (requireNonNull(arg, name).isEmpty()) {
       throw new IllegalArgumentException(String.format("%s is empty", name));
     }
     return arg;
   }
 
-  public static <T> T[] checkNotEmpty(T[] array, String name) {
-    if (checkNotNull(array, name).length <= 0) {
+  public static <T> T[] requireNonEmpty(T[] array, String name) {
+    if (requireNonNull(array, name).length <= 0) {
       throw new IllegalArgumentException(String.format("%s is empty", name));
     }
     return array;
   }
 
-  public static <T> T[] checkNotContainsNull(T[] array, String name) {
-    checkNotEmpty(array, name);
+  public static <T> T[] requireNonContainsNull(T[] array, String name) {
+    requireNonEmpty(array, name);
     for (int i = 0; i < array.length; i++) {
       if (array[i] == null) {
         throw new NullPointerException(String.format("%s[%d]", name, i));

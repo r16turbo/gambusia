@@ -19,8 +19,8 @@ package io.gambusia.mqtt;
 import static io.gambusia.mqtt.handler.MqttFixedHeaders.DISCONNECT_HEADER;
 import static io.gambusia.mqtt.handler.MqttFixedHeaders.PUBACK_HEADER;
 import static io.gambusia.mqtt.handler.MqttFixedHeaders.PUBCOMP_HEADER;
-import static io.gambusia.netty.util.Args.checkNotNull;
-import static io.gambusia.netty.util.Args.checkPositive;
+import static io.gambusia.netty.util.Args.requireNonNull;
+import static io.gambusia.netty.util.Args.requirePositive;
 
 import io.gambusia.mqtt.handler.MqttPinger;
 import io.gambusia.mqtt.handler.promise.MqttConnectPromise;
@@ -63,9 +63,9 @@ public class MqttAsyncClient {
 
   public MqttAsyncClient(Channel channel, long timeout, TimeUnit unit, MqttPinger pinger) {
     this.channel = channel;
-    this.timeout = checkPositive(timeout, "timeout");
-    this.unit = checkNotNull(unit, "unit");
-    this.pinger = checkNotNull(pinger, "pinger");
+    this.timeout = requirePositive(timeout, "timeout");
+    this.unit = requireNonNull(unit, "unit");
+    this.pinger = requireNonNull(pinger, "pinger");
   }
 
   // initializer

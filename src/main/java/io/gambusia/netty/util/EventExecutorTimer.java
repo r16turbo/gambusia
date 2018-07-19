@@ -16,7 +16,7 @@
 
 package io.gambusia.netty.util;
 
-import static io.gambusia.netty.util.Args.checkNotNull;
+import static io.gambusia.netty.util.Args.requireNonNull;
 
 import io.netty.util.Timeout;
 import io.netty.util.Timer;
@@ -46,7 +46,7 @@ public class EventExecutorTimer implements Timer {
   private boolean stopped = false;
 
   public EventExecutorTimer(EventExecutorGroup executor) {
-    this.executor = checkNotNull(executor, "executor");
+    this.executor = requireNonNull(executor, "executor");
   }
 
   @Override
@@ -93,8 +93,8 @@ public class EventExecutorTimer implements Timer {
     private final Future<?> future;
 
     EventExecutorTimeout(EventExecutorTimer timer, TimerTask task, long delay, TimeUnit unit) {
-      this.timer = checkNotNull(timer, "timer");
-      this.task = checkNotNull(task, "task");
+      this.timer = requireNonNull(timer, "timer");
+      this.task = requireNonNull(task, "task");
       this.id = timer.addTimeout(this);
       this.future = timer.executor
           .schedule(new TimeoutSchedule(this), delay, unit)

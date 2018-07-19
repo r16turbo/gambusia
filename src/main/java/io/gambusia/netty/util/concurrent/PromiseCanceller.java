@@ -16,7 +16,7 @@
 
 package io.gambusia.netty.util.concurrent;
 
-import static io.gambusia.netty.util.Args.checkNotNull;
+import static io.gambusia.netty.util.Args.requireNonNull;
 
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.GenericFutureListener;
@@ -40,7 +40,7 @@ public class PromiseCanceller<V> implements GenericFutureListener<Future<V>> {
   }
 
   public PromiseCanceller(Promise<?> promise, boolean mayInterruptIfRunning) {
-    this.promise = checkNotNull(promise, "promise");
+    this.promise = requireNonNull(promise, "promise");
     this.mayInterruptIfRunning = mayInterruptIfRunning;
   }
 

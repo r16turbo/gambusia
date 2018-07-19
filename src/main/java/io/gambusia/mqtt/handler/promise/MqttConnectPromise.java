@@ -16,9 +16,9 @@
 
 package io.gambusia.mqtt.handler.promise;
 
-import static io.gambusia.netty.util.Args.checkNotEmpty;
-import static io.gambusia.netty.util.Args.checkNotNull;
-import static io.gambusia.netty.util.Args.checkUnsignedShort;
+import static io.gambusia.netty.util.Args.requireNonEmpty;
+import static io.gambusia.netty.util.Args.requireNonNull;
+import static io.gambusia.netty.util.Args.requireUnsignedShort;
 
 import io.gambusia.mqtt.MqttArticle;
 import io.gambusia.mqtt.MqttConnectResult;
@@ -47,12 +47,12 @@ public class MqttConnectPromise extends MqttPromise<MqttConnectResult> {
       String clientId, MqttArticle will, String username, byte[] password) {
 
     super(executor, timeout, unit);
-    this.protocolName = checkNotEmpty(protocolName, "protocolName");
+    this.protocolName = requireNonEmpty(protocolName, "protocolName");
     this.protocolLevel = protocolLevel;
     this.cleanSession = cleanSession;
-    this.keepAlive = checkUnsignedShort(keepAlive, "keepAlive");
-    this.pingDelay = checkUnsignedShort(pingDelay, "pingDelay");
-    this.pinger = checkNotNull(pinger, "pinger");
+    this.keepAlive = requireUnsignedShort(keepAlive, "keepAlive");
+    this.pingDelay = requireUnsignedShort(pingDelay, "pingDelay");
+    this.pinger = requireNonNull(pinger, "pinger");
     this.clientId = clientId;
     this.will = will;
     this.username = username;

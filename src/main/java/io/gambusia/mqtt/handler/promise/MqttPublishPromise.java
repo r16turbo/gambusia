@@ -16,7 +16,7 @@
 
 package io.gambusia.mqtt.handler.promise;
 
-import static io.gambusia.netty.util.Args.checkNotNull;
+import static io.gambusia.netty.util.Args.requireNonNull;
 
 import io.gambusia.mqtt.MqttArticle;
 import io.gambusia.mqtt.MqttPublishFuture;
@@ -36,7 +36,7 @@ public class MqttPublishPromise extends MqttPromise<Void> implements MqttPublish
   public MqttPublishPromise(EventExecutor executor, long timeout, TimeUnit unit,
       MqttArticle article, int packetId) {
     super(executor, timeout, unit);
-    this.article = checkNotNull(article, "article");
+    this.article = requireNonNull(article, "article");
     this.duplicate = packetId > 0;
     this.packetId = packetId;
   }

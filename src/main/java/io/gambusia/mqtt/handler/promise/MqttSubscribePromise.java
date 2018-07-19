@@ -16,7 +16,7 @@
 
 package io.gambusia.mqtt.handler.promise;
 
-import static io.gambusia.netty.util.Args.checkNotContainsNull;
+import static io.gambusia.netty.util.Args.requireNonContainsNull;
 
 import io.gambusia.mqtt.MqttSubscription;
 import io.netty.handler.codec.mqtt.MqttQoS;
@@ -36,7 +36,7 @@ public class MqttSubscribePromise extends MqttPromise<MqttQoS[]> {
       MqttSubscription... subscriptions) {
     super(executor, timeout, unit);
     this.subscriptions = Collections.unmodifiableList(
-        Arrays.asList(checkNotContainsNull(subscriptions, "subscriptions")));
+        Arrays.asList(requireNonContainsNull(subscriptions, "subscriptions")));
   }
 
   public List<MqttSubscription> subscriptions() {

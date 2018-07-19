@@ -22,7 +22,7 @@ import static io.gambusia.mqtt.handler.MqttFixedHeaders.PUBREC_HEADER;
 import static io.gambusia.mqtt.handler.MqttFixedHeaders.PUBREL_HEADER;
 import static io.gambusia.mqtt.handler.MqttFixedHeaders.SUBSCRIBE_HEADER;
 import static io.gambusia.mqtt.handler.MqttFixedHeaders.UNSUBSCRIBE_HEADER;
-import static io.gambusia.netty.util.Args.checkNotNull;
+import static io.gambusia.netty.util.Args.requireNonNull;
 
 import io.gambusia.mqtt.MqttArticle;
 import io.gambusia.mqtt.MqttConnectResult;
@@ -126,9 +126,9 @@ public class MqttClientHandler extends ChannelDuplexHandler {
 
   public MqttClientHandler(MqttSubscriber subscriber,
       MqttPacketId publishId, MqttUnexpectedPacketHandler handler, Timer timer) {
-    this.subscriber = checkNotNull(subscriber, "subscriber");
-    this.publishId = checkNotNull(publishId, "publishId");
-    this.unexpectedPacketHandler = checkNotNull(handler, "handler");
+    this.subscriber = requireNonNull(subscriber, "subscriber");
+    this.publishId = requireNonNull(publishId, "publishId");
+    this.unexpectedPacketHandler = requireNonNull(handler, "handler");
     this.timer = timer;
   }
 

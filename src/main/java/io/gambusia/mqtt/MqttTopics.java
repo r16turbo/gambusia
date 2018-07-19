@@ -67,7 +67,7 @@ public final class MqttTopics {
     return true;
   }
 
-  public static <T extends CharSequence> T checkTopic(T topic, String name)
+  public static <T extends CharSequence> T requireValidTopic(T topic, String name)
       throws NullPointerException, IllegalArgumentException {
     if (topic == null) {
       throw new NullPointerException(name);
@@ -77,7 +77,7 @@ public final class MqttTopics {
     return topic;
   }
 
-  public static <F extends CharSequence> F checkFilter(F filter, String name)
+  public static <F extends CharSequence> F requireValidFilter(F filter, String name)
       throws NullPointerException, IllegalArgumentException {
     if (filter == null) {
       throw new NullPointerException(name);
@@ -149,7 +149,7 @@ public final class MqttTopics {
     return true;
   }
 
-  public static <S extends CharSequence> S checkShareName(S shareName, String name)
+  public static <S extends CharSequence> S requireValidShareName(S shareName, String name)
       throws NullPointerException, IllegalArgumentException {
     if (shareName == null) {
       throw new NullPointerException(name);
