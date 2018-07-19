@@ -123,12 +123,12 @@ public final class MqttTopics {
         return filter.charAt(filterIndex) == '#';
       case 2:
         // filter has remaining "/#"
-        return filter.charAt(filterIndex) == '/'
-            && filter.charAt(filterIndex + 1) == '#';
+        // (if filter is valid, can skip '/' check)
+        return filter.charAt(filterIndex + 1) == '#';
       case 3:
         // filter has remaining "+/#"
+        // (if filter is valid, can skip '/' check)
         return filter.charAt(filterIndex) == '+'
-            && filter.charAt(filterIndex + 1) == '/'
             && filter.charAt(filterIndex + 2) == '#';
 
       default:
