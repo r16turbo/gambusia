@@ -16,24 +16,17 @@
 
 package io.gambusia.mqtt;
 
-import java.nio.charset.StandardCharsets;
-
 public final class MqttTopics {
   private MqttTopics() {}
 
-  public static final int MIN_BYTES = 1;
-  public static final int MAX_BYTES = 65535;
+  public static final int MIN_CHARS = 1;
+  public static final int MAX_CHARS = 65535;
 
   public static final char NUL = '\u0000';
 
-  public static boolean isValidLength(CharSequence topic) {
-    final int length = topic.toString().getBytes(StandardCharsets.UTF_8).length;
-    return length >= MIN_BYTES && length <= MAX_BYTES;
-  }
-
   public static boolean isValidTopic(CharSequence topic) {
     final int length = topic.length();
-    if (length < 1 || length > 65535) {
+    if (length < MIN_CHARS || length > MAX_CHARS) {
       return false; // no character, or more than 65535 character
     }
     for (int index = 0; index < length; index++) {
@@ -47,7 +40,7 @@ public final class MqttTopics {
 
   public static boolean isValidFilter(CharSequence filter) {
     final int length = filter.length();
-    if (length < 1 || length > 65535) {
+    if (length < MIN_CHARS || length > MAX_CHARS) {
       return false; // no character, or more than 65535 character
     }
     for (int index = 0; index < length; index++) {
@@ -139,7 +132,7 @@ public final class MqttTopics {
 
   public static boolean isValidShareName(CharSequence shareName) {
     final int length = shareName.length();
-    if (length < 1 || length > 65535) {
+    if (length < MIN_CHARS || length > MAX_CHARS) {
       return false; // no character, or more than 65535 character
     }
     for (int index = 0; index < length; index++) {

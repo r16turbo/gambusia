@@ -31,7 +31,7 @@ import org.junit.jupiter.api.Test;
 
 class MqttTopicsTest {
 
-  static final CharSequence overflow = new DummyCharSequence(65535 + 1);
+  static final CharSequence overflow = new DummyCharSequence(MqttTopics.MAX_CHARS + 1);
   static final Checker<CharSequence> topicChecker = MqttTopics::requireValidTopic;
   static final Checker<CharSequence> filterChecker = MqttTopics::requireValidFilter;
   static final Checker<CharSequence> shareNameChecker = MqttTopics::requireValidShareName;
