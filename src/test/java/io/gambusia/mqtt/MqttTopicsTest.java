@@ -28,6 +28,7 @@ import org.junit.jupiter.api.Test;
 
 class MqttTopicsTest {
 
+  static final CharSequence overflow = new DummyCharSequence(65535 + 1);
   static final Checker<CharSequence> topicChecker = MqttTopics::requireValidTopic;
   static final Checker<CharSequence> filterChecker = MqttTopics::requireValidFilter;
   static final Checker<CharSequence> shareNameChecker = MqttTopics::requireValidShareName;
@@ -77,6 +78,7 @@ class MqttTopicsTest {
 
     assertNullPointerException(topicChecker, (CharSequence) null, "topic");
     assertIllegalArgumentException(topicChecker, "", "topic");
+    assertIllegalArgumentException(topicChecker, overflow, "topic");
     assertIllegalArgumentException(topicChecker, "\u0000", "topic");
     assertIllegalArgumentException(topicChecker, "sport/tennis/#", "topic");
     assertIllegalArgumentException(topicChecker, "+", "topic");
@@ -90,6 +92,7 @@ class MqttTopicsTest {
 
     assertNullPointerException(filterChecker, (CharSequence) null, "filter");
     assertIllegalArgumentException(filterChecker, "", "filter");
+    assertIllegalArgumentException(filterChecker, overflow, "filter");
     assertIllegalArgumentException(filterChecker, "\u0000", "filter");
     assertIllegalArgumentException(filterChecker, "#?", "filter");
     assertIllegalArgumentException(filterChecker, "+?", "filter");
@@ -112,6 +115,7 @@ class MqttTopicsTest {
     assertChecker(shareNameChecker, "consumer1", "shareName");
     assertNullPointerException(shareNameChecker, (CharSequence) null, "shareName");
     assertIllegalArgumentException(shareNameChecker, "", "shareName");
+    assertIllegalArgumentException(shareNameChecker, overflow, "shareName");
     assertIllegalArgumentException(shareNameChecker, "consumer\u0000", "shareName");
     assertIllegalArgumentException(shareNameChecker, "consumer/", "shareName");
     assertIllegalArgumentException(shareNameChecker, "consumer#", "shareName");
@@ -138,5 +142,29 @@ class MqttTopicsTest {
     assertEquals(name, assertThrows(IllegalArgumentException.class, () -> {
       checker.check(value, name);
     }).getMessage());
+  }
+
+  static class DummyCharSequence implements CharSequence {
+
+    private final int length;
+
+    public DummyCharSequence(int length) {
+      this.length = length;
+    }
+
+    @Override
+    public int length() {
+      return length;
+    }
+
+    @Override
+    public char charAt(int index) {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public CharSequence subSequence(int start, int end) {
+      throw new UnsupportedOperationException();
+    }
   }
 }
