@@ -97,9 +97,8 @@ public final class MqttTopics {
       final char filterChar = filter.charAt(filterIndex++);
       final char topicChar = topic.charAt(topicIndex++);
       if (filterChar == '#') {
-        // skip to end of topic
-        topicIndex = topicLength;
-        break;
+        // matches any number of subsequent topics
+        return true;
       } else if (filterChar == '+') {
         // skip to next separator or end of topic
         if (topicChar != '/') {
