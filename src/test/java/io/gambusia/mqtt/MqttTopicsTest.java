@@ -17,6 +17,9 @@
 package io.gambusia.mqtt;
 
 import static io.gambusia.mqtt.MqttTopics.matches;
+import static io.gambusia.mqtt.MqttTopics.requireValidFilter;
+import static io.gambusia.mqtt.MqttTopics.requireValidShareName;
+import static io.gambusia.mqtt.MqttTopics.requireValidTopic;
 import static io.gambusia.mqtt.MqttTopics.toSharedFilter;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -37,9 +40,9 @@ class MqttTopicsTest {
   void testMultiLevelWildcard() {
     // http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.html
     // 4.7.1.2 Multi-level wildcard
-    assertTrue(matches("sport/tennis/player1/#", "sport/tennis/player1"));
-    assertTrue(matches("sport/tennis/player1/#", "sport/tennis/player1/ranking"));
-    assertTrue(matches("sport/tennis/player1/#", "sport/tennis/player1/score/wimbledon"));
+    assertMatches(true, "sport/tennis/player1/#", "sport/tennis/player1");
+    assertMatches(true, "sport/tennis/player1/#", "sport/tennis/player1/ranking");
+    assertMatches(true, "sport/tennis/player1/#", "sport/tennis/player1/score/wimbledon");
 
     assertChecker(filterChecker, "sport/tennis/#", "filter");
     assertIllegalArgumentException(filterChecker, "sport/tennis#", "filter");
@@ -50,21 +53,21 @@ class MqttTopicsTest {
   void testSingleLevelWildcard() {
     // http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.html
     // 4.7.1.3 Single level wildcard
-    assertTrue(matches("sport/tennis/+", "sport/tennis/player1"));
-    assertTrue(matches("sport/tennis/+", "sport/tennis/player2"));
-    assertFalse(matches("sport/tennis/+", "sport/tennis/player1/ranking"));
+    assertMatches(true, "sport/tennis/+", "sport/tennis/player1");
+    assertMatches(true, "sport/tennis/+", "sport/tennis/player2");
+    assertMatches(false, "sport/tennis/+", "sport/tennis/player1/ranking");
 
-    assertFalse(matches("sport/+", "sport"));
-    assertFalse(matches("sport/+", "sport/"));
+    assertMatches(false, "sport/+", "sport");
+    assertMatches(false, "sport/+", "sport/");
 
     assertChecker(filterChecker, "+", "filter");
     assertChecker(filterChecker, "+/tennis/#", "filter");
     assertIllegalArgumentException(filterChecker, "sport+", "filter");
     assertChecker(filterChecker, "sport/+/player1", "filter");
 
-    assertTrue(matches("+/+", "/finance"));
-    assertTrue(matches("/+", "/finance"));
-    assertFalse(matches("+", "/finance"));
+    assertMatches(true, "+/+", "/finance");
+    assertMatches(true, "/+", "/finance");
+    assertMatches(false, "+", "/finance");
   }
 
   @Test
@@ -97,17 +100,17 @@ class MqttTopicsTest {
     assertIllegalArgumentException(filterChecker, "#?", "filter");
     assertIllegalArgumentException(filterChecker, "+?", "filter");
 
-    assertTrue(matches("sport/tennis/player1/#", "sport/tennis/player1/"));
-    assertFalse(matches("sport/football/player1/#", "sport/tennis/player1"));
-    assertFalse(matches("sport/football/+", "sport/tennis/player1"));
+    assertMatches(true, "sport/tennis/player1/#", "sport/tennis/player1/");
+    assertMatches(false, "sport/football/player1/#", "sport/tennis/player1");
+    assertMatches(false, "sport/football/+", "sport/tennis/player1");
 
-    assertTrue(matches("sport/tennis/+/#", "sport/tennis/"));
-    assertFalse(matches("sport/tennis/+/#", "sport/tennis"));
-    assertFalse(matches("sport/tennis/?/#", "sport/tennis/"));
-    assertFalse(matches("sport/tennis/+/?", "sport/tennis/"));
+    assertMatches(true, "sport/tennis/+/#", "sport/tennis/");
+    assertMatches(false, "sport/tennis/+/#", "sport/tennis");
+    assertMatches(false, "sport/tennis/?/#", "sport/tennis/");
+    assertMatches(false, "sport/tennis/+/?", "sport/tennis/");
 
-    assertTrue(matches("sport/tennis/+/", "sport/tennis//"));
-    assertFalse(matches("sport/tennis/+", "sport/tennis//"));
+    assertMatches(true, "sport/tennis/+/", "sport/tennis//");
+    assertMatches(false, "sport/tennis/+", "sport/tennis//");
   }
 
   @Test
@@ -121,7 +124,7 @@ class MqttTopicsTest {
     assertIllegalArgumentException(shareNameChecker, "consumer#", "shareName");
     assertIllegalArgumentException(shareNameChecker, "consumer+", "shareName");
 
-    assertEquals("$share/consumer1/+/tennis/#", toSharedFilter("consumer1", "+/tennis/#"));
+    assertSharedFilter("$share/consumer1/+/tennis/#", "consumer1", "+/tennis/#");
   }
 
   interface Checker<V> {
@@ -142,6 +145,20 @@ class MqttTopicsTest {
     assertEquals(name, assertThrows(IllegalArgumentException.class, () -> {
       checker.check(value, name);
     }).getMessage());
+  }
+
+  static void assertMatches(boolean match, CharSequence filter, CharSequence topic) {
+    if (match) {
+      assertTrue(matches(requireValidFilter(filter, "filter"), requireValidTopic(topic, "topic")));
+    } else {
+      assertFalse(matches(requireValidFilter(filter, "filter"), requireValidTopic(topic, "topic")));
+    }
+  }
+
+  static void assertSharedFilter(String sharedFilter, CharSequence shareName, CharSequence filter) {
+    requireValidShareName(shareName, "shareName");
+    requireValidFilter(filter, "filter");
+    assertEquals(sharedFilter, toSharedFilter(shareName, filter));
   }
 
   static class DummyCharSequence implements CharSequence {
