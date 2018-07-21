@@ -19,6 +19,7 @@ package io.gambusia.mqtt.handler.promise;
 import static io.gambusia.netty.util.Args.requireNonNegative;
 import static io.gambusia.netty.util.Args.requireNonNull;
 
+import io.netty.handler.codec.mqtt.MqttMessageType;
 import io.netty.util.Timeout;
 import io.netty.util.Timer;
 import io.netty.util.TimerTask;
@@ -36,6 +37,8 @@ public abstract class MqttPromise<V> extends DefaultPromise<V> implements TimerT
     this.timeout = requireNonNegative(timeout, "timeout");
     this.unit = requireNonNull(unit, "unit");
   }
+
+  public abstract MqttMessageType messageType();
 
   public Timeout set(Timer timer) {
     if (timeout > 0) {

@@ -21,6 +21,7 @@ import static io.gambusia.netty.util.Args.requireUnsignedShort;
 
 import io.gambusia.mqtt.MqttArticle;
 import io.gambusia.mqtt.MqttPublishFuture;
+import io.netty.handler.codec.mqtt.MqttMessageType;
 import io.netty.handler.codec.mqtt.MqttQoS;
 import io.netty.util.Timeout;
 import io.netty.util.concurrent.EventExecutor;
@@ -40,6 +41,11 @@ public class MqttPublishPromise extends MqttPromise<Void> implements MqttPublish
     this.article = requireNonNull(article, "article");
     this.duplicate = packetId > 0;
     this.packetId = requireUnsignedShort(packetId, "packetId");
+  }
+
+  @Override
+  public final MqttMessageType messageType() {
+    return MqttMessageType.PUBLISH;
   }
 
   @Override

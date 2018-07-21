@@ -18,6 +18,7 @@ package io.gambusia.mqtt.handler.promise;
 
 import static io.gambusia.netty.util.Args.requireNonContainsNull;
 
+import io.netty.handler.codec.mqtt.MqttMessageType;
 import io.netty.util.Timeout;
 import io.netty.util.concurrent.EventExecutor;
 import java.util.Arrays;
@@ -35,6 +36,11 @@ public class MqttUnsubscribePromise extends MqttPromise<Void> {
     super(executor, timeout, unit);
     this.topicFilters = Collections.unmodifiableList(
         Arrays.asList(requireNonContainsNull(topicFilters, "topicFilters")));
+  }
+
+  @Override
+  public final MqttMessageType messageType() {
+    return MqttMessageType.UNSUBSCRIBE;
   }
 
   public List<String> topicFilters() {

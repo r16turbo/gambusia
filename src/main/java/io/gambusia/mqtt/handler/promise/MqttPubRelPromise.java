@@ -18,6 +18,7 @@ package io.gambusia.mqtt.handler.promise;
 
 import static io.gambusia.netty.util.Args.requireUnsignedShort;
 
+import io.netty.handler.codec.mqtt.MqttMessageType;
 import io.netty.util.Timeout;
 import io.netty.util.concurrent.EventExecutor;
 import java.util.concurrent.TimeUnit;
@@ -30,6 +31,11 @@ public class MqttPubRelPromise extends MqttPromise<Void> {
   public MqttPubRelPromise(EventExecutor executor, long timeout, TimeUnit unit, int packetId) {
     super(executor, timeout, unit);
     this.packetId = requireUnsignedShort(packetId, "packetId");
+  }
+
+  @Override
+  public final MqttMessageType messageType() {
+    return MqttMessageType.PUBREL;
   }
 
   public int packetId() {

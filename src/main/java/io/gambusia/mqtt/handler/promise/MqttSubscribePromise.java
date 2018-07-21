@@ -19,6 +19,7 @@ package io.gambusia.mqtt.handler.promise;
 import static io.gambusia.netty.util.Args.requireNonContainsNull;
 
 import io.gambusia.mqtt.MqttSubscription;
+import io.netty.handler.codec.mqtt.MqttMessageType;
 import io.netty.handler.codec.mqtt.MqttQoS;
 import io.netty.util.Timeout;
 import io.netty.util.concurrent.EventExecutor;
@@ -37,6 +38,11 @@ public class MqttSubscribePromise extends MqttPromise<MqttQoS[]> {
     super(executor, timeout, unit);
     this.subscriptions = Collections.unmodifiableList(
         Arrays.asList(requireNonContainsNull(subscriptions, "subscriptions")));
+  }
+
+  @Override
+  public final MqttMessageType messageType() {
+    return MqttMessageType.SUBSCRIBE;
   }
 
   public List<MqttSubscription> subscriptions() {

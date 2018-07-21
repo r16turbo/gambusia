@@ -173,20 +173,32 @@ public class MqttClientHandler extends ChannelDuplexHandler {
   public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise)
       throws Exception {
 
-    if (msg instanceof MqttConnectPromise) {
-      write(ctx, (MqttConnectPromise) msg, promise);
-    } else if (msg instanceof MqttPublishPromise) {
-      write(ctx, (MqttPublishPromise) msg, promise);
-    } else if (msg instanceof MqttPubRecPromise) {
-      write(ctx, (MqttPubRecPromise) msg, promise);
-    } else if (msg instanceof MqttPubRelPromise) {
-      write(ctx, (MqttPubRelPromise) msg, promise);
-    } else if (msg instanceof MqttSubscribePromise) {
-      write(ctx, (MqttSubscribePromise) msg, promise);
-    } else if (msg instanceof MqttUnsubscribePromise) {
-      write(ctx, (MqttUnsubscribePromise) msg, promise);
-    } else if (msg instanceof MqttPingPromise) {
-      write(ctx, (MqttPingPromise) msg, promise);
+    if (msg instanceof MqttPromise<?>) {
+      switch (((MqttPromise<?>) msg).messageType()) {
+        case CONNECT:
+          write(ctx, (MqttConnectPromise) msg, promise);
+          break;
+        case PUBLISH:
+          write(ctx, (MqttPublishPromise) msg, promise);
+          break;
+        case PUBREC:
+          write(ctx, (MqttPubRecPromise) msg, promise);
+          break;
+        case PUBREL:
+          write(ctx, (MqttPubRelPromise) msg, promise);
+          break;
+        case SUBSCRIBE:
+          write(ctx, (MqttSubscribePromise) msg, promise);
+          break;
+        case UNSUBSCRIBE:
+          write(ctx, (MqttUnsubscribePromise) msg, promise);
+          break;
+        case PINGREQ:
+          write(ctx, (MqttPingPromise) msg, promise);
+          break;
+        default:
+          ctx.write(msg, promise);
+      }
     } else if (msg instanceof MqttMessage) {
       writeAndTouch(ctx, msg, promise);
     } else {

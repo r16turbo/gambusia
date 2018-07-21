@@ -16,6 +16,7 @@
 
 package io.gambusia.mqtt.handler.promise;
 
+import io.netty.handler.codec.mqtt.MqttMessageType;
 import io.netty.util.Timeout;
 import io.netty.util.concurrent.EventExecutor;
 import java.util.concurrent.TimeUnit;
@@ -25,6 +26,11 @@ public class MqttPingPromise extends MqttPromise<Void> {
 
   public MqttPingPromise(EventExecutor executor, long timeout, TimeUnit unit) {
     super(executor, timeout, unit);
+  }
+
+  @Override
+  public final MqttMessageType messageType() {
+    return MqttMessageType.PINGREQ;
   }
 
   @Override

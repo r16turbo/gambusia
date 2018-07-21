@@ -23,6 +23,7 @@ import static io.gambusia.netty.util.Args.requireUnsignedShort;
 import io.gambusia.mqtt.MqttArticle;
 import io.gambusia.mqtt.MqttConnectResult;
 import io.gambusia.mqtt.handler.MqttPinger;
+import io.netty.handler.codec.mqtt.MqttMessageType;
 import io.netty.util.Timeout;
 import io.netty.util.concurrent.EventExecutor;
 import java.util.concurrent.TimeUnit;
@@ -57,6 +58,11 @@ public class MqttConnectPromise extends MqttPromise<MqttConnectResult> {
     this.will = will;
     this.username = username;
     this.password = password;
+  }
+
+  @Override
+  public final MqttMessageType messageType() {
+    return MqttMessageType.CONNECT;
   }
 
   public String protocolName() {
