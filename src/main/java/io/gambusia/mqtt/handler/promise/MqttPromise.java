@@ -29,8 +29,8 @@ import java.util.concurrent.TimeUnit;
 
 public abstract class MqttPromise<V> extends DefaultPromise<V> implements TimerTask {
 
-  private final long timeout;
-  private final TimeUnit unit;
+  protected final long timeout;
+  protected final TimeUnit unit;
 
   protected MqttPromise(EventExecutor executor, long timeout, TimeUnit unit) {
     super(executor);
