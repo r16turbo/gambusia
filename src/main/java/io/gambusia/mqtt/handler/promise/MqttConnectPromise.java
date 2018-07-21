@@ -53,7 +53,7 @@ public class MqttConnectPromise extends MqttPromise<MqttConnectResult> {
     this.keepAlive = requireUnsignedShort(keepAlive, "keepAlive");
     this.pingDelay = requireUnsignedShort(pingDelay, "pingDelay");
     this.pinger = requireNonNull(pinger, "pinger");
-    this.clientId = clientId;
+    this.clientId = requireNonNull(clientId, "clientId");
     this.will = will;
     this.username = username;
     this.password = password;
