@@ -625,7 +625,10 @@ public class MqttClientHandler extends ChannelDuplexHandler {
   }
 
   protected <P extends MqttPromise<V>, V> P setTimer(P promise) {
-    promise.addListener(new TimeoutCanceller<>(promise.set(timer())));
+    final Timeout timeout = promise.set(timer());
+    if (timeout != null) {
+      promise.addListener(new TimeoutCanceller<>(timeout));
+    }
     return promise;
   }
 
