@@ -33,14 +33,14 @@ public final class Args {
     return i;
   }
 
-  public static int requirePositiveOrZero(int i, String name) {
+  public static int requireNonNegative(int i, String name) {
     if (i < 0) {
       throw new IllegalArgumentException(String.format("%s: %d (expected: >= 0)", name, i));
     }
     return i;
   }
 
-  public static long requirePositiveOrZero(long i, String name) {
+  public static long requireNonNegative(long i, String name) {
     if (i < 0) {
       throw new IllegalArgumentException(String.format("%s: %d (expected: >= 0)", name, i));
     }
