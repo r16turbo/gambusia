@@ -17,6 +17,7 @@
 package io.gambusia.mqtt.handler.promise;
 
 import static io.gambusia.netty.util.Args.requireNonNull;
+import static io.gambusia.netty.util.Args.requireUnsignedShort;
 
 import io.gambusia.mqtt.MqttArticle;
 import io.gambusia.mqtt.MqttPublishFuture;
@@ -38,7 +39,7 @@ public class MqttPublishPromise extends MqttPromise<Void> implements MqttPublish
     super(executor, timeout, unit);
     this.article = requireNonNull(article, "article");
     this.duplicate = packetId > 0;
-    this.packetId = packetId;
+    this.packetId = requireUnsignedShort(packetId, "packetId");
   }
 
   @Override
@@ -52,7 +53,7 @@ public class MqttPublishPromise extends MqttPromise<Void> implements MqttPublish
   }
 
   public void packetId(int packetId) {
-    this.packetId = packetId;
+    this.packetId = requireUnsignedShort(packetId, "packetId");
   }
 
   @Override
