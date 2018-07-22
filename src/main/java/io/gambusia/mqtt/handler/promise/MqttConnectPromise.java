@@ -39,8 +39,8 @@ public class MqttConnectPromise extends MqttPromise<MqttConnectResult> {
   private final MqttPinger pinger;
   private final String clientId;
   private final MqttArticle will;
-  private final String username;
-  private final byte[] password;
+  private transient String username;
+  private transient byte[] password;
 
   public MqttConnectPromise(EventExecutor executor, long timeout, TimeUnit unit,
       String protocolName, int protocolLevel,
@@ -57,7 +57,7 @@ public class MqttConnectPromise extends MqttPromise<MqttConnectResult> {
     this.clientId = requireNonNull(clientId, "clientId");
     this.will = will;
     this.username = username;
-    this.password = password;
+    this.password = password == null ? null : password.clone();
   }
 
   @Override
@@ -97,12 +97,48 @@ public class MqttConnectPromise extends MqttPromise<MqttConnectResult> {
     return will;
   }
 
+  public boolean hasUsername() {
+    return username != null;
+  }
+
   public String username() {
-    return username;
+    return username(false);
+  }
+
+  public String username(boolean remove) {
+    if (!hasUsername()) {
+      return null;
+    } else if (remove) {
+      try {
+        return username;
+      } finally {
+        username = null;
+      }
+    } else {
+      return username;
+    }
+  }
+
+  public boolean hasPassword() {
+    return password != null;
   }
 
   public byte[] password() {
-    return password;
+    return password(false);
+  }
+
+  public byte[] password(boolean remove) {
+    if (!hasPassword()) {
+      return null;
+    } else if (remove) {
+      try {
+        return password;
+      } finally {
+        password = null;
+      }
+    } else {
+      return password.clone();
+    }
   }
 
   @Override

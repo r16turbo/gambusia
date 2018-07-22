@@ -224,8 +224,8 @@ public class MqttClientHandler extends ChannelDuplexHandler {
             new MqttConnectVariableHeader(
                 msg.protocolName(),
                 msg.protocolLevel(),
-                msg.username() != null,
-                msg.password() != null,
+                msg.hasUsername(),
+                msg.hasPassword(),
                 !hasWill ? false : will.isRetain(),
                 !hasWill ? 0 : will.qos().value(),
                 hasWill,
@@ -235,8 +235,8 @@ public class MqttClientHandler extends ChannelDuplexHandler {
                 msg.clientId(),
                 !hasWill ? null : will.topic(),
                 !hasWill ? null : will.payloadAsBytes(),
-                msg.username(),
-                msg.password()));
+                msg.username(true),
+                msg.password(true)));
       }
       startKeepAlive(ctx, connectPromise);
       writeAndTouch(ctx, message, channel);
