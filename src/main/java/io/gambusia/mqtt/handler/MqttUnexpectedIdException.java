@@ -18,15 +18,15 @@ package io.gambusia.mqtt.handler;
 
 import io.netty.handler.codec.mqtt.MqttMessageType;
 
-public class MqttUnknownIdException extends Exception {
+public class MqttUnexpectedIdException extends Exception {
 
-  private static final long serialVersionUID = 8666052396073096437L;
+  private static final long serialVersionUID = -119235437079757788L;
 
   private final MqttMessageType messageType;
   private final int packetId;
 
-  public MqttUnknownIdException(MqttMessageType messageType, int packetId) {
-    super("Unknown message: type=" + messageType + ", packetId=" + packetId);
+  public MqttUnexpectedIdException(MqttMessageType messageType, int packetId) {
+    super("Unexpected message: type=" + messageType + ", packetId=" + packetId);
     this.messageType = messageType;
     this.packetId = packetId;
   }
