@@ -22,29 +22,29 @@ import io.netty.util.Timeout;
 import io.netty.util.Timer;
 import io.netty.util.TimerTask;
 import io.netty.util.collection.IntObjectHashMap;
-import io.netty.util.concurrent.EventExecutorGroup;
-import io.netty.util.concurrent.Future;
 import io.netty.util.internal.logging.InternalLogger;
 import io.netty.util.internal.logging.InternalLoggerFactory;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.Future;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-public class EventExecutorTimer implements Timer {
+public class ScheduledExecutorTimer implements Timer {
 
   private static final InternalLogger logger;
 
   static {
-    logger = InternalLoggerFactory.getInstance(EventExecutorTimer.class);
+    logger = InternalLoggerFactory.getInstance(ScheduledExecutorTimer.class);
   }
 
   private final IntObjectHashMap<Timeout> timeouts = new IntObjectHashMap<>();
-  private final EventExecutorGroup executor;
+  private final ScheduledExecutorService executor;
 
   private int timeoutId = 0;
   private boolean stopped = false;
 
-  public EventExecutorTimer(EventExecutorGroup executor) {
+  public ScheduledExecutorTimer(ScheduledExecutorService executor) {
     this.executor = requireNonNull(executor, "executor");
   }
 
@@ -53,7 +53,7 @@ public class EventExecutorTimer implements Timer {
     if (stopped) {
       throw new IllegalStateException("cannot be started once stopped");
     }
-    return new EventExecutorTimeout(this, task, delay, unit);
+    return new ScheduledExecutorTimeout(this, task, delay, unit);
   }
 
   @Override
@@ -92,15 +92,17 @@ public class EventExecutorTimer implements Timer {
     }
   }
 
-  private static final class EventExecutorTimeout implements Timeout, Runnable {
+  private static final class ScheduledExecutorTimeout implements Timeout, Runnable {
 
-    private final EventExecutorTimer timer;
+    private final ScheduledExecutorTimer timer;
     private final TimerTask task;
 
     private final int id;
     private final Future<?> future;
 
-    EventExecutorTimeout(EventExecutorTimer timer, TimerTask task, long delay, TimeUnit unit) {
+    ScheduledExecutorTimeout(ScheduledExecutorTimer timer, TimerTask task,
+        long delay, TimeUnit unit) {
+
       this.timer = requireNonNull(timer, "timer");
       this.task = requireNonNull(task, "task");
       requireNonNull(unit, "unit");

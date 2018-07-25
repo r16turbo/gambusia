@@ -41,7 +41,7 @@ import io.gambusia.mqtt.handler.promise.MqttPubRelPromise;
 import io.gambusia.mqtt.handler.promise.MqttPublishPromise;
 import io.gambusia.mqtt.handler.promise.MqttSubscribePromise;
 import io.gambusia.mqtt.handler.promise.MqttUnsubscribePromise;
-import io.gambusia.netty.util.EventExecutorTimer;
+import io.gambusia.netty.util.ScheduledExecutorTimer;
 import io.gambusia.netty.util.concurrent.PromiseCanceller;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelDuplexHandler;
@@ -147,7 +147,7 @@ public class MqttClientHandler extends ChannelDuplexHandler {
   @Override
   public void channelRegistered(ChannelHandlerContext ctx) throws Exception {
     if (timer == null) {
-      timer = new EventExecutorTimer(ctx.executor());
+      timer = new ScheduledExecutorTimer(ctx.executor());
     }
     ctx.fireChannelRegistered();
   }

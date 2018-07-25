@@ -34,19 +34,19 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-class EventExecutorTimerTest {
+class ScheduledExecutorTimerTest {
 
   static {
     InternalLoggerFactory.setDefaultFactory(Log4J2LoggerFactory.INSTANCE);
   }
 
   EventExecutor executor;
-  EventExecutorTimer timer;
+  ScheduledExecutorTimer timer;
 
   @BeforeEach
   void setUp() throws Exception {
     executor = new DefaultEventExecutor();
-    timer = new EventExecutorTimer(executor);
+    timer = new ScheduledExecutorTimer(executor);
   }
 
   @AfterEach
