@@ -24,7 +24,6 @@ import io.netty.util.TimerTask;
 import io.netty.util.collection.IntObjectHashMap;
 import io.netty.util.concurrent.EventExecutorGroup;
 import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.FutureListener;
 import io.netty.util.internal.logging.InternalLogger;
 import io.netty.util.internal.logging.InternalLoggerFactory;
 import java.util.HashSet;
@@ -84,7 +83,16 @@ public class EventExecutorTimer implements Timer {
     }
   }
 
-  private static final class EventExecutorTimeout implements Timeout {
+  private Future<?> schedule(int id, Runnable command, long delay, TimeUnit unit) {
+    try {
+      return executor.schedule(command, delay, unit);
+    } catch (Exception e) {
+      removeTimeout(id);
+      throw e;
+    }
+  }
+
+  private static final class EventExecutorTimeout implements Timeout, Runnable {
 
     private final EventExecutorTimer timer;
     private final TimerTask task;
@@ -95,10 +103,9 @@ public class EventExecutorTimer implements Timer {
     EventExecutorTimeout(EventExecutorTimer timer, TimerTask task, long delay, TimeUnit unit) {
       this.timer = requireNonNull(timer, "timer");
       this.task = requireNonNull(task, "task");
+      requireNonNull(unit, "unit");
       this.id = timer.addTimeout(this);
-      this.future = timer.executor
-          .schedule(new TimeoutSchedule(this), delay, unit)
-          .addListener(new TimeoutRemover<>(timer, id));
+      this.future = timer.schedule(id, this, delay, unit);
     }
 
     @Override
@@ -123,40 +130,21 @@ public class EventExecutorTimer implements Timer {
 
     @Override
     public boolean cancel() {
-      return future.cancel(false);
-    }
-
-    private static class TimeoutSchedule implements Runnable {
-
-      private final Timeout timeout;
-
-      TimeoutSchedule(Timeout timeout) {
-        this.timeout = timeout;
-      }
-
-      @Override
-      public void run() {
-        try {
-          timeout.task().run(timeout);
-        } catch (Throwable cause) {
-          logger.warn("An exception was thrown by TimerTask.", cause);
-        }
-      }
-    }
-
-    private static class TimeoutRemover<V> implements FutureListener<V> {
-
-      private final EventExecutorTimer timer;
-      private final int id;
-
-      TimeoutRemover(EventExecutorTimer timer, int id) {
-        this.timer = timer;
-        this.id = id;
-      }
-
-      @Override
-      public void operationComplete(Future<V> future) {
+      if (future.cancel(false)) {
         timer.removeTimeout(id);
+        return true;
+      } else {
+        return false;
+      }
+    }
+
+    @Override
+    public void run() {
+      try {
+        timer.removeTimeout(id);
+        task.run(this);
+      } catch (Throwable cause) {
+        logger.warn("An exception was thrown by TimerTask.", cause);
       }
     }
   }
