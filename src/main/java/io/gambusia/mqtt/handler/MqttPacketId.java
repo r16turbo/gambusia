@@ -23,14 +23,17 @@ public final class MqttPacketId implements Serializable {
 
   private static final long serialVersionUID = -1608711409506773103L;
 
+  public static final int MIN_VALUE = 1;
+  public static final int MAX_VALUE = 65535;
+
   private final AtomicInteger id;
 
   public MqttPacketId() {
-    this(1);
+    this(MIN_VALUE);
   }
 
   public MqttPacketId(int initialValue) {
-    if (initialValue < 1 || initialValue > 0x0000ffff) {
+    if (initialValue < MIN_VALUE || initialValue > MAX_VALUE) {
       throw new IllegalArgumentException("initialValue");
     }
     this.id = new AtomicInteger(initialValue);
@@ -44,7 +47,7 @@ public final class MqttPacketId implements Serializable {
     int prev;
     int next;
     do {
-      next = (prev = id.get()) >= 0xFFFF ? 1 : prev + 1;
+      next = (prev = id.get()) >= MAX_VALUE ? MIN_VALUE : prev + 1;
     } while (!id.compareAndSet(prev, next));
     return prev;
   }
