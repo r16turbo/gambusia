@@ -33,10 +33,7 @@ public final class MqttPacketId implements Serializable {
   }
 
   public MqttPacketId(int initialValue) {
-    if (initialValue < MIN_VALUE || initialValue > MAX_VALUE) {
-      throw new IllegalArgumentException("initialValue");
-    }
-    this.id = new AtomicInteger(initialValue);
+    this.id = new AtomicInteger(requireValidPacketId(initialValue, "initialValue"));
   }
 
   public int get() {
@@ -55,5 +52,16 @@ public final class MqttPacketId implements Serializable {
   @Override
   public String toString() {
     return id.toString();
+  }
+
+  public static boolean isValidPacketId(int id) {
+    return id >= MIN_VALUE && id <= MAX_VALUE;
+  }
+
+  public static int requireValidPacketId(int id, String name) throws IllegalArgumentException {
+    if (!isValidPacketId(id)) {
+      throw new IllegalArgumentException(String.format("%s: %d (expected: 1–65535)", name, id));
+    }
+    return id;
   }
 }
