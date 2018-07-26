@@ -77,7 +77,7 @@ class MqttAsyncClientTest {
 
   @AfterAll
   static void tearDownAfterClass() throws Exception {
-    WORKER_GROUP.shutdownGracefully().sync();
+    WORKER_GROUP.shutdownGracefully();
   }
 
   private final MqttAsyncClient client = new MqttAsyncClient(10, TimeUnit.SECONDS);
@@ -687,13 +687,5 @@ class MqttAsyncClientTest {
       assertTrue(client.received(msg.packetId()).sync().isSuccess());
       assertTrue(client.complete(msg.packetId()).sync().isSuccess());
     }
-  }
-
-  @Nested
-  class Zzz {
-
-    @Test
-    @DisplayName("finish")
-    void finish() {}
   }
 }
