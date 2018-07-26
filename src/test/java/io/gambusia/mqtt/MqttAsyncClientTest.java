@@ -162,7 +162,10 @@ class MqttAsyncClientTest {
         client.connect(true, 60, 0xFFFF + 1, "test");
       });
 
-      Future<MqttConnectResult> future = client.connect(true, 60, 60, "test");
+      MqttArticle will = new MqttArticle(MqttQoS.AT_LEAST_ONCE, false, "test/will", payload());
+      String user = "user";
+      byte[] pass = "pass".getBytes(StandardCharsets.UTF_8);
+      Future<MqttConnectResult> future = client.connect(true, 60, 60, "test", will, user, pass);
       assertTrue(future.sync().isSuccess());
 
       MqttConnectResult result = future.getNow();
