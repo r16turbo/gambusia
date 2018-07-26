@@ -299,6 +299,7 @@ class MqttAsyncClientTest {
       assertNotNull(msg);
       assertFalse(msg.isDuplicate());
       assertEquals(0, msg.qos().value());
+      assertFalse(msg.isRetain());
       assertEquals("test/0/0", msg.topic());
       assertEquals(PAYLOAD, msg.payload().toString(StandardCharsets.UTF_8));
       assertTrue(msg.release());
@@ -319,6 +320,7 @@ class MqttAsyncClientTest {
       assertNotNull(msg);
       assertFalse(msg.isDuplicate());
       assertEquals(0, msg.qos().value());
+      assertFalse(msg.isRetain());
       assertEquals("test/0/1", msg.topic());
       assertEquals(PAYLOAD, msg.payload().toString(StandardCharsets.UTF_8));
       assertTrue(msg.release());
@@ -339,6 +341,7 @@ class MqttAsyncClientTest {
       assertNotNull(msg);
       assertFalse(msg.isDuplicate());
       assertEquals(0, msg.qos().value());
+      assertFalse(msg.isRetain());
       assertEquals("test/0/2", msg.topic());
       assertEquals(PAYLOAD, msg.payload().toString(StandardCharsets.UTF_8));
       assertTrue(msg.release());
@@ -359,6 +362,7 @@ class MqttAsyncClientTest {
       assertNotNull(msg);
       assertFalse(msg.isDuplicate());
       assertEquals(0, msg.qos().value());
+      assertFalse(msg.isRetain());
       assertEquals("test/1/0", msg.topic());
       assertEquals(PAYLOAD, msg.payload().toString(StandardCharsets.UTF_8));
       assertTrue(msg.release());
@@ -379,6 +383,7 @@ class MqttAsyncClientTest {
       assertNotNull(msg);
       assertFalse(msg.isDuplicate());
       assertEquals(1, msg.qos().value());
+      assertFalse(msg.isRetain());
       assertEquals("test/1/1", msg.topic());
       assertEquals(PAYLOAD, msg.payload().toString(StandardCharsets.UTF_8));
       assertTrue(msg.release());
@@ -401,6 +406,7 @@ class MqttAsyncClientTest {
       assertNotNull(msg);
       assertFalse(msg.isDuplicate());
       assertEquals(1, msg.qos().value());
+      assertFalse(msg.isRetain());
       assertEquals("test/1/2", msg.topic());
       assertEquals(PAYLOAD, msg.payload().toString(StandardCharsets.UTF_8));
       assertTrue(msg.release());
@@ -424,6 +430,7 @@ class MqttAsyncClientTest {
       assertNotNull(msg);
       assertFalse(msg.isDuplicate());
       assertEquals(0, msg.qos().value());
+      assertFalse(msg.isRetain());
       assertEquals("test/2/0", msg.topic());
       assertEquals(PAYLOAD, msg.payload().toString(StandardCharsets.UTF_8));
       assertTrue(msg.release());
@@ -445,6 +452,7 @@ class MqttAsyncClientTest {
       assertNotNull(msg);
       assertFalse(msg.isDuplicate());
       assertEquals(1, msg.qos().value());
+      assertFalse(msg.isRetain());
       assertEquals("test/2/1", msg.topic());
       assertEquals(PAYLOAD, msg.payload().toString(StandardCharsets.UTF_8));
       assertTrue(msg.release());
@@ -468,6 +476,7 @@ class MqttAsyncClientTest {
       assertNotNull(msg);
       assertFalse(msg.isDuplicate());
       assertEquals(2, msg.qos().value());
+      assertFalse(msg.isRetain());
       assertEquals("test/2/2", msg.topic());
       assertEquals(PAYLOAD, msg.payload().toString(StandardCharsets.UTF_8));
       assertTrue(msg.release());
@@ -496,6 +505,7 @@ class MqttAsyncClientTest {
       assertNotNull(msg);
       assertFalse(msg.isDuplicate());
       assertEquals(0, msg.qos().value());
+      assertFalse(msg.isRetain());
       assertEquals("test/1/0", msg.topic());
       assertEquals(PAYLOAD, msg.payload().toString(StandardCharsets.UTF_8));
       assertTrue(msg.release());
@@ -510,6 +520,7 @@ class MqttAsyncClientTest {
       assertNotNull(msg);
       assertFalse(msg.isDuplicate());
       assertEquals(0, msg.qos().value());
+      assertFalse(msg.isRetain());
       assertEquals("test/1/0", msg.topic());
       assertEquals(PAYLOAD, msg.payload().toString(StandardCharsets.UTF_8));
       assertTrue(msg.release());
@@ -530,6 +541,7 @@ class MqttAsyncClientTest {
       assertNotNull(msg);
       assertFalse(msg.isDuplicate());
       assertEquals(1, msg.qos().value());
+      assertFalse(msg.isRetain());
       assertEquals("test/1/1", msg.topic());
       assertEquals(PAYLOAD, msg.payload().toString(StandardCharsets.UTF_8));
       assertTrue(msg.release());
@@ -546,6 +558,7 @@ class MqttAsyncClientTest {
       assertNotNull(msg);
       assertFalse(msg.isDuplicate());
       assertEquals(1, msg.qos().value());
+      assertFalse(msg.isRetain());
       assertEquals("test/1/1", msg.topic());
       assertEquals(PAYLOAD, msg.payload().toString(StandardCharsets.UTF_8));
       assertTrue(msg.release());
@@ -568,6 +581,7 @@ class MqttAsyncClientTest {
       assertNotNull(msg);
       assertFalse(msg.isDuplicate());
       assertEquals(1, msg.qos().value());
+      assertFalse(msg.isRetain());
       assertEquals("test/1/2", msg.topic());
       assertEquals(PAYLOAD, msg.payload().toString(StandardCharsets.UTF_8));
       assertTrue(msg.release());
@@ -584,6 +598,7 @@ class MqttAsyncClientTest {
       assertNotNull(msg);
       assertFalse(msg.isDuplicate());
       assertEquals(1, msg.qos().value());
+      assertFalse(msg.isRetain());
       assertEquals("test/1/2", msg.topic());
       assertEquals(PAYLOAD, msg.payload().toString(StandardCharsets.UTF_8));
       assertTrue(msg.release());
@@ -616,6 +631,7 @@ class MqttAsyncClientTest {
       assertNotNull(msg);
       assertFalse(msg.isDuplicate());
       assertEquals(0, msg.qos().value());
+      assertFalse(msg.isRetain());
       assertEquals("test/2/0", msg.topic());
       assertEquals(PAYLOAD, msg.payload().toString(StandardCharsets.UTF_8));
       assertTrue(msg.release());
@@ -646,6 +662,7 @@ class MqttAsyncClientTest {
       assertNotNull(msg);
       assertFalse(msg.isDuplicate());
       assertEquals(1, msg.qos().value());
+      assertFalse(msg.isRetain());
       assertEquals("test/2/1", msg.topic());
       assertEquals(PAYLOAD, msg.payload().toString(StandardCharsets.UTF_8));
 
@@ -677,6 +694,7 @@ class MqttAsyncClientTest {
       assertNotNull(msg);
       assertFalse(msg.isDuplicate());
       assertEquals(2, msg.qos().value());
+      assertFalse(msg.isRetain());
       assertEquals("test/2/2", msg.topic());
       assertEquals(PAYLOAD, msg.payload().toString(StandardCharsets.UTF_8));
       assertTrue(msg.release());
