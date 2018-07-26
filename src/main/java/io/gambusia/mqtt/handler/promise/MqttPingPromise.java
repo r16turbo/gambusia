@@ -35,6 +35,6 @@ public class MqttPingPromise extends MqttPromise<Void> {
 
   @Override
   public void run(Timeout timeout) {
-    tryFailure(new TimeoutException("PINGRESP"));
+    tryFailure(new TimeoutException("No response message: expected=PINGRESP"));
   }
 }

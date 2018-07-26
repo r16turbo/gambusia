@@ -44,6 +44,6 @@ public class MqttPubRelPromise extends MqttPromise<Void> {
 
   @Override
   public void run(Timeout timeout) {
-    tryFailure(new TimeoutException("PUBCOMP"));
+    tryFailure(new TimeoutException("No response message: expected=PUBCOMP"));
   }
 }

@@ -143,6 +143,6 @@ public class MqttConnectPromise extends MqttPromise<MqttConnectResult> {
 
   @Override
   public void run(Timeout timeout) {
-    tryFailure(new TimeoutException("CONNACK"));
+    tryFailure(new TimeoutException("No response message: expected=CONNACK"));
   }
 }

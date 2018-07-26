@@ -51,6 +51,6 @@ public class MqttSubscribePromise extends MqttPromise<MqttQoS[]> {
 
   @Override
   public void run(Timeout timeout) {
-    tryFailure(new TimeoutException("SUBACK"));
+    tryFailure(new TimeoutException("No response message: expected=SUBACK"));
   }
 }

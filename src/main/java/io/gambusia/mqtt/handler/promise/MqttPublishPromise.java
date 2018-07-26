@@ -76,13 +76,13 @@ public class MqttPublishPromise extends MqttPromise<Void> implements MqttPublish
   public void run(Timeout timeout) {
     switch (article.qos()) {
       case AT_LEAST_ONCE:
-        tryFailure(new TimeoutException("PUBACK"));
+        tryFailure(new TimeoutException("No response message: expected=PUBACK"));
         break;
       case EXACTLY_ONCE:
-        tryFailure(new TimeoutException("PUBREC"));
+        tryFailure(new TimeoutException("No response message: expected=PUBREC"));
         break;
       default:
-        tryFailure(new TimeoutException("unknown"));
+        tryFailure(new TimeoutException("Incomplete write message"));
         break;
     }
   }

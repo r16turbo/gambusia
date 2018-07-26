@@ -49,6 +49,6 @@ public class MqttUnsubscribePromise extends MqttPromise<Void> {
 
   @Override
   public void run(Timeout timeout) {
-    tryFailure(new TimeoutException("UNSUBACK"));
+    tryFailure(new TimeoutException("No response message: expected=UNSUBACK"));
   }
 }
