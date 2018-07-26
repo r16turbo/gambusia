@@ -21,10 +21,10 @@ import static io.gambusia.mqtt.MqttTopics.requireValidFilter;
 import static io.gambusia.mqtt.MqttTopics.requireValidShareName;
 import static io.gambusia.mqtt.MqttTopics.requireValidTopic;
 import static io.gambusia.mqtt.MqttTopics.toSharedFilter;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Tag;
@@ -138,15 +138,15 @@ class MqttTopicsTest {
   }
 
   static <V> void assertNullPointerException(Checker<V> checker, V value, String name) {
-    assertEquals(name, assertThrows(NullPointerException.class, () -> {
-      checker.check(value, name);
-    }).getMessage());
+    assertThatExceptionOfType(NullPointerException.class)
+        .isThrownBy(() -> checker.check(value, name))
+        .withMessage(name);
   }
 
   static <V> void assertIllegalArgumentException(Checker<V> checker, V value, String name) {
-    assertEquals(name, assertThrows(IllegalArgumentException.class, () -> {
-      checker.check(value, name);
-    }).getMessage());
+    assertThatExceptionOfType(IllegalArgumentException.class)
+        .isThrownBy(() -> checker.check(value, name))
+        .withMessage(name);
   }
 
   static void assertMatches(boolean match, CharSequence filter, CharSequence topic) {

@@ -16,11 +16,11 @@
 
 package io.gambusia.netty.util;
 
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.assertj.core.api.Assertions.fail;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 
 import io.netty.util.Timeout;
 import io.netty.util.Timer;
@@ -142,7 +142,7 @@ class ScheduledExecutorTimerTest {
       assertTrue(latch.await(1, TimeUnit.SECONDS));
       assertTrue(timer.stop().isEmpty());
 
-      assertThrows(IllegalStateException.class, () -> {
+      assertThatExceptionOfType(IllegalStateException.class).isThrownBy(() -> {
         timer.newTimeout(timeout -> fail("This should not have run"), 1, TimeUnit.SECONDS);
       });
     }
