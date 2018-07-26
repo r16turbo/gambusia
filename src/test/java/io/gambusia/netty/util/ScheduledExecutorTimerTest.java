@@ -23,15 +23,19 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import io.netty.util.Timeout;
+import io.netty.util.Timer;
 import io.netty.util.TimerTask;
 import io.netty.util.concurrent.DefaultEventExecutor;
 import io.netty.util.concurrent.EventExecutor;
 import io.netty.util.internal.logging.InternalLoggerFactory;
 import io.netty.util.internal.logging.Log4J2LoggerFactory;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 class ScheduledExecutorTimerTest {
@@ -40,71 +44,105 @@ class ScheduledExecutorTimerTest {
     InternalLoggerFactory.setDefaultFactory(Log4J2LoggerFactory.INSTANCE);
   }
 
-  EventExecutor executor;
-  ScheduledExecutorTimer timer;
+  Timer timer;
 
-  @BeforeEach
-  void setUp() throws Exception {
-    executor = new DefaultEventExecutor();
-    timer = new ScheduledExecutorTimer(executor);
-  }
+  @Nested
+  class JavaScheduledExecutorTest extends TestBase {
 
-  @AfterEach
-  void tearDown() throws Exception {
-    timer.stop();
-    executor.shutdownGracefully().sync();
-  }
+    ScheduledExecutorService executor;
 
-  @Test
-  void testExpire() throws InterruptedException {
-    final CountDownLatch latch = new CountDownLatch(1);
-    final TimerTask task = timeout -> latch.countDown();
-    final Timeout timeout = timer.newTimeout(task, 2, TimeUnit.SECONDS);
-    assertEquals(timer, timeout.timer());
-    assertEquals(task, timeout.task());
-    assertTrue(latch.await(3, TimeUnit.SECONDS));
-    assertTrue(timeout.isExpired());
-    assertTrue(timer.stop().isEmpty());
-  }
-
-  @Test
-  void testNotExpire() throws InterruptedException {
-    final CountDownLatch latch = new CountDownLatch(1);
-    final TimerTask task = timeout -> {
-      fail("This should not have run");
-      latch.countDown();
-    };
-    final Timeout timeout = timer.newTimeout(task, 10, TimeUnit.SECONDS);
-    assertEquals(timer, timeout.timer());
-    assertEquals(task, timeout.task());
-    assertFalse(latch.await(3, TimeUnit.SECONDS));
-    assertFalse(timeout.isExpired());
-    assertFalse(timer.stop().isEmpty());
-  }
-
-  @Test
-  void testCancel() {
-    final TimerTask task = timeout -> fail("This should not have run");
-    final Timeout timeout = timer.newTimeout(task, Long.MAX_VALUE, TimeUnit.SECONDS);
-    assertFalse(timeout.isCancelled());
-    assertTrue(timeout.cancel());
-    assertTrue(timeout.isCancelled());
-    assertFalse(timeout.cancel());
-    assertTrue(timer.stop().isEmpty());
-  }
-
-  @Test
-  void testStoppedTimer() throws InterruptedException {
-    final int count = 10;
-    final CountDownLatch latch = new CountDownLatch(count);
-    for (int i = 0; i < count; i++) {
-      timer.newTimeout(timeout -> latch.countDown(), 1, TimeUnit.MILLISECONDS);
+    @BeforeEach
+    void setUp() throws Exception {
+      executor = Executors.newSingleThreadScheduledExecutor();
+      timer = new ScheduledExecutorTimer(executor);
     }
-    assertTrue(latch.await(1, TimeUnit.SECONDS));
-    assertTrue(timer.stop().isEmpty());
 
-    assertThrows(IllegalStateException.class, () -> {
-      timer.newTimeout(timeout -> fail("This should not have run"), 1, TimeUnit.SECONDS);
-    });
+    @AfterEach
+    void tearDown() throws Exception {
+      timer.stop();
+      executor.shutdown();
+      while (!executor.awaitTermination(1, TimeUnit.SECONDS)) {
+        executor.shutdownNow();
+      }
+    }
+  }
+
+  @Nested
+  class NettyScheduledExecutorTest extends TestBase {
+
+    EventExecutor executor;
+
+    @BeforeEach
+    void setUp() throws Exception {
+      executor = new DefaultEventExecutor();
+      timer = new ScheduledExecutorTimer(executor);
+    }
+
+    @AfterEach
+    void tearDown() throws Exception {
+      timer.stop();
+      executor.shutdownGracefully().sync();
+    }
+  }
+
+  abstract class TestBase {
+
+    @Test
+    void testExpire() throws InterruptedException {
+      final CountDownLatch latch = new CountDownLatch(1);
+      final TimerTask task = timeout -> latch.countDown();
+      final Timeout timeout = timer.newTimeout(task, 2, TimeUnit.SECONDS);
+      assertEquals(timer, timeout.timer());
+      assertEquals(task, timeout.task());
+      assertTrue(latch.await(3, TimeUnit.SECONDS));
+      assertTrue(timeout.isExpired());
+      assertTrue(timer.stop().isEmpty());
+    }
+
+    @Test
+    void testNotExpire() throws InterruptedException {
+      final CountDownLatch latch = new CountDownLatch(1);
+      final TimerTask task = timeout -> {
+        fail("This should not have run");
+        latch.countDown();
+      };
+      final Timeout timeout = timer.newTimeout(task, 10, TimeUnit.SECONDS);
+      assertEquals(timer, timeout.timer());
+      assertEquals(task, timeout.task());
+      assertFalse(latch.await(3, TimeUnit.SECONDS));
+      assertFalse(timeout.isExpired());
+      assertFalse(timer.stop().isEmpty());
+      assertTrue(timer.stop().isEmpty());
+    }
+
+    @Test
+    void testCancel() throws InterruptedException {
+      final CountDownLatch latch = new CountDownLatch(1);
+      final TimerTask task = timeout -> fail("This should not have run");
+      final Timeout timeout = timer.newTimeout(task, 2, TimeUnit.SECONDS);
+      assertFalse(timeout.isExpired());
+      assertFalse(timeout.isCancelled());
+      assertTrue(timeout.cancel());
+      assertTrue(timeout.isCancelled());
+      assertFalse(timeout.cancel());
+      assertFalse(latch.await(3, TimeUnit.SECONDS));
+      assertFalse(timeout.isExpired());
+      assertTrue(timer.stop().isEmpty());
+    }
+
+    @Test
+    void testStoppedTimer() throws InterruptedException {
+      final int count = 10;
+      final CountDownLatch latch = new CountDownLatch(count);
+      for (int i = 0; i < count; i++) {
+        timer.newTimeout(timeout -> latch.countDown(), 1, TimeUnit.MILLISECONDS);
+      }
+      assertTrue(latch.await(1, TimeUnit.SECONDS));
+      assertTrue(timer.stop().isEmpty());
+
+      assertThrows(IllegalStateException.class, () -> {
+        timer.newTimeout(timeout -> fail("This should not have run"), 1, TimeUnit.SECONDS);
+      });
+    }
   }
 }
