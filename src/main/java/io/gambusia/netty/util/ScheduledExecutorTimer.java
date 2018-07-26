@@ -21,13 +21,16 @@ import static io.gambusia.netty.util.Args.requireNonNull;
 import io.netty.util.Timeout;
 import io.netty.util.Timer;
 import io.netty.util.TimerTask;
-import io.netty.util.collection.IntObjectHashMap;
 import io.netty.util.internal.logging.InternalLogger;
 import io.netty.util.internal.logging.InternalLoggerFactory;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.Future;
+import java.util.WeakHashMap;
+import java.util.concurrent.Callable;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 public class ScheduledExecutorTimer implements Timer {
@@ -38,10 +41,9 @@ public class ScheduledExecutorTimer implements Timer {
     logger = InternalLoggerFactory.getInstance(ScheduledExecutorTimer.class);
   }
 
-  private final IntObjectHashMap<Timeout> timeouts = new IntObjectHashMap<>();
+  private final Map<Timeout, Void> timeouts = new WeakHashMap<>();
   private final ScheduledExecutorService executor;
 
-  private int timeoutId = 0;
   private boolean stopped = false;
 
   public ScheduledExecutorTimer(ScheduledExecutorService executor) {
@@ -61,7 +63,7 @@ public class ScheduledExecutorTimer implements Timer {
     this.stopped = true;
     final Set<Timeout> unfinished;
     synchronized (timeouts) {
-      unfinished = new HashSet<>(timeouts.values());
+      unfinished = new HashSet<>(timeouts.keySet());
     }
     for (Timeout timeout : unfinished) {
       timeout.cancel();
@@ -69,45 +71,38 @@ public class ScheduledExecutorTimer implements Timer {
     return unfinished;
   }
 
-  private int addTimeout(Timeout timeout) {
+  private ScheduledFuture<Void> register(TimeoutRunner timeout, long delay, TimeUnit unit) {
     synchronized (timeouts) {
-      final int id = timeoutId++;
-      timeouts.put(id, timeout);
-      return id;
+      if (timeouts.containsKey(timeout)) {
+        throw new RejectedExecutionException("timeout has already been bound");
+      }
+      ScheduledFuture<Void> future = executor.schedule(timeout, delay, unit);
+      timeouts.put(timeout, null);
+      return future;
     }
   }
 
-  private void removeTimeout(int id) {
+  private void unregister(TimeoutRunner timeout) {
     synchronized (timeouts) {
-      timeouts.remove(id);
+      timeouts.remove(timeout);
     }
   }
 
-  private Future<?> schedule(int id, Runnable command, long delay, TimeUnit unit) {
-    try {
-      return executor.schedule(command, delay, unit);
-    } catch (Exception e) {
-      removeTimeout(id);
-      throw e;
-    }
+  private interface TimeoutRunner extends Timeout, Callable<Void> {
   }
 
-  private static final class ScheduledExecutorTimeout implements Timeout, Runnable {
+  private static final class ScheduledExecutorTimeout implements TimeoutRunner {
 
     private final ScheduledExecutorTimer timer;
     private final TimerTask task;
-
-    private final int id;
-    private final Future<?> future;
+    private final ScheduledFuture<Void> future;
 
     ScheduledExecutorTimeout(ScheduledExecutorTimer timer, TimerTask task,
         long delay, TimeUnit unit) {
 
       this.timer = requireNonNull(timer, "timer");
       this.task = requireNonNull(task, "task");
-      requireNonNull(unit, "unit");
-      this.id = timer.addTimeout(this);
-      this.future = timer.schedule(id, this, delay, unit);
+      this.future = timer.register(this, delay, requireNonNull(unit, "unit"));
     }
 
     @Override
@@ -122,7 +117,8 @@ public class ScheduledExecutorTimer implements Timer {
 
     @Override
     public boolean isExpired() {
-      return future.isDone();
+      // expired is not a done of future
+      return isCancelled() ? false : future.getDelay(TimeUnit.NANOSECONDS) <= 0;
     }
 
     @Override
@@ -133,7 +129,7 @@ public class ScheduledExecutorTimer implements Timer {
     @Override
     public boolean cancel() {
       if (future.cancel(false)) {
-        timer.removeTimeout(id);
+        timer.unregister(this);
         return true;
       } else {
         return false;
@@ -141,13 +137,14 @@ public class ScheduledExecutorTimer implements Timer {
     }
 
     @Override
-    public void run() {
+    public Void call() throws Exception {
       try {
-        timer.removeTimeout(id);
+        timer.unregister(this);
         task.run(this);
       } catch (Throwable cause) {
         logger.warn("An exception was thrown by TimerTask.", cause);
       }
+      return null;
     }
   }
 }
