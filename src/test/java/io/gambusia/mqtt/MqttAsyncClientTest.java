@@ -43,6 +43,8 @@ import io.netty.handler.logging.LoggingHandler;
 import io.netty.util.concurrent.Future;
 import io.netty.util.internal.logging.InternalLoggerFactory;
 import io.netty.util.internal.logging.Log4J2LoggerFactory;
+import java.nio.channels.AlreadyConnectedException;
+import java.nio.channels.NotYetConnectedException;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
@@ -112,6 +114,39 @@ class MqttAsyncClientTest {
     }
 
     @Test
+    @DisplayName("disconnected")
+    void disconnected() throws InterruptedException {
+      MqttArticle article = new MqttArticle(MqttQoS.AT_MOST_ONCE, false, "test", payload());
+      try {
+        Future<?> publish = client.publish(article);
+        assertFalse(publish.await().isSuccess());
+        assertTrue(publish.cause() instanceof NotYetConnectedException);
+      } finally {
+        assertTrue(article.release());
+      }
+
+      Future<?> received = client.received(1);
+      assertFalse(received.await().isSuccess());
+      assertTrue(received.cause() instanceof NotYetConnectedException);
+
+      Future<?> release = client.release(1);
+      assertFalse(release.await().isSuccess());
+      assertTrue(release.cause() instanceof NotYetConnectedException);
+
+      Future<?> subscribe = client.subscribe(MqttSubscription.qos0("test"));
+      assertFalse(subscribe.await().isSuccess());
+      assertTrue(subscribe.cause() instanceof NotYetConnectedException);
+
+      Future<?> unsubscribe = client.unsubscribe("test");
+      assertFalse(unsubscribe.await().isSuccess());
+      assertTrue(unsubscribe.cause() instanceof NotYetConnectedException);
+
+      Future<?> ping = client.ping();
+      assertFalse(ping.await().isSuccess());
+      assertTrue(ping.cause() instanceof NotYetConnectedException);
+    }
+
+    @Test
     @DisplayName("connect")
     void connect() throws InterruptedException {
       assertThrows(IllegalArgumentException.class, () -> {
@@ -134,6 +169,10 @@ class MqttAsyncClientTest {
       assertNotNull(result);
       assertEquals(0, result.returnCode());
       assertFalse(result.isSessionPresent());
+
+      future = client.connect(true, 60, 60, "test");
+      assertFalse(future.await().isSuccess());
+      assertTrue(future.cause() instanceof AlreadyConnectedException);
     }
 
     @Test
