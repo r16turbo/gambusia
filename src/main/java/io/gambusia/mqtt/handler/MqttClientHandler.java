@@ -198,6 +198,7 @@ public class MqttClientHandler extends ChannelDuplexHandler {
           break;
         default:
           ctx.write(msg, promise);
+          break;
       }
     } else if (msg instanceof MqttMessage) {
       writeAndTouch(ctx, msg, promise);
@@ -251,17 +252,8 @@ public class MqttClientHandler extends ChannelDuplexHandler {
     } else {
       final MqttArticle article = msg.article();
       final int packetId;
-      final boolean atMostOnce;
       switch (article.qos()) {
         case AT_LEAST_ONCE:
-          if (msg.isDuplicate()) {
-            packetId = msg.packetId();
-          } else {
-            packetId = publishId.getAndIncrement();
-            msg.packetId(packetId);
-          }
-          atMostOnce = false;
-          break;
         case EXACTLY_ONCE:
           if (msg.isDuplicate()) {
             packetId = msg.packetId();
@@ -269,20 +261,18 @@ public class MqttClientHandler extends ChannelDuplexHandler {
             packetId = publishId.getAndIncrement();
             msg.packetId(packetId);
           }
-          atMostOnce = false;
           break;
         default:
           packetId = 0;
-          atMostOnce = true;
           break;
       }
-      if (!atMostOnce && publishPromises.containsKey(packetId)) {
+      if (packetId > 0 && publishPromises.containsKey(packetId)) {
         msg.setFailure(new MqttDuplicateIdException(MqttMessageType.PUBLISH, packetId));
       } else {
         final ByteBuf payload;
         final MqttPublishPromise promise;
         final MqttPublishMessage message;
-        if (atMostOnce) {
+        if (packetId == 0) {
           // QoS 0
           payload = article.payload();
           promise = msg;
@@ -469,6 +459,7 @@ public class MqttClientHandler extends ChannelDuplexHandler {
           break;
         default:
           ctx.fireChannelRead(msg);
+          break;
       }
     } else {
       ctx.fireChannelRead(msg);
