@@ -93,25 +93,35 @@ class ScheduledExecutorTimerTest {
     void testExpire() throws InterruptedException {
       final CountDownLatch latch = new CountDownLatch(1);
       final TimerTask task = timeout -> latch.countDown();
-      final Timeout timeout = timer.newTimeout(task, 1, TimeUnit.SECONDS);
+      final Timeout timeout = timer.newTimeout(task, 1, TimeUnit.MILLISECONDS);
       assertEquals(timer, timeout.timer());
       assertEquals(task, timeout.task());
-      assertTrue(latch.await(2, TimeUnit.SECONDS));
+      assertTrue(latch.await(1, TimeUnit.SECONDS));
+      assertTrue(timeout.isExpired());
+      assertTrue(timer.stop().isEmpty());
+    }
+
+    @Test
+    void testExpireAndThrown() throws InterruptedException {
+      final CountDownLatch latch = new CountDownLatch(1);
+      final TimerTask task = timeout -> {
+        latch.countDown();
+        throw new IllegalStateException("Exception for the exam");
+      };
+      final Timeout timeout = timer.newTimeout(task, 1, TimeUnit.MILLISECONDS);
+      assertEquals(timer, timeout.timer());
+      assertEquals(task, timeout.task());
+      assertTrue(latch.await(1, TimeUnit.SECONDS));
       assertTrue(timeout.isExpired());
       assertTrue(timer.stop().isEmpty());
     }
 
     @Test
     void testNotExpire() throws InterruptedException {
-      final CountDownLatch latch = new CountDownLatch(1);
-      final TimerTask task = timeout -> {
-        fail("This should not have run");
-        latch.countDown();
-      };
-      final Timeout timeout = timer.newTimeout(task, 2, TimeUnit.SECONDS);
+      final TimerTask task = timeout -> fail("This should not have run");
+      final Timeout timeout = timer.newTimeout(task, 100, TimeUnit.MILLISECONDS);
       assertEquals(timer, timeout.timer());
       assertEquals(task, timeout.task());
-      assertFalse(latch.await(1, TimeUnit.SECONDS));
       assertFalse(timeout.isExpired());
       assertFalse(timer.stop().isEmpty());
       assertTrue(timer.stop().isEmpty());
@@ -121,13 +131,13 @@ class ScheduledExecutorTimerTest {
     void testCancel() throws InterruptedException {
       final CountDownLatch latch = new CountDownLatch(1);
       final TimerTask task = timeout -> fail("This should not have run");
-      final Timeout timeout = timer.newTimeout(task, 1, TimeUnit.SECONDS);
+      final Timeout timeout = timer.newTimeout(task, 100, TimeUnit.MILLISECONDS);
       assertFalse(timeout.isExpired());
       assertFalse(timeout.isCancelled());
       assertTrue(timeout.cancel());
       assertTrue(timeout.isCancelled());
       assertFalse(timeout.cancel());
-      assertFalse(latch.await(2, TimeUnit.SECONDS));
+      assertFalse(latch.await(200, TimeUnit.MILLISECONDS));
       assertFalse(timeout.isExpired());
       assertTrue(timer.stop().isEmpty());
     }
