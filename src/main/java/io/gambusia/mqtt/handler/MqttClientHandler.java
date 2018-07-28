@@ -517,7 +517,8 @@ public class MqttClientHandler extends ChannelDuplexHandler {
         final MqttArticle article = promise.article();
         final MqttQoS qos = article.qos();
         if (qos != MqttQoS.AT_LEAST_ONCE) {
-          promise.tryFailure(new MqttQoSException("invalid=" + qos.value() + ", expect=1"));
+          promise.tryFailure(
+              new MqttQoSException("Unexpected QoS: " + qos.value() + " (expected: 1)"));
         } else if (promise.trySuccess(null) || promise.isSuccess()) {
           promise.article().release();
         }
@@ -537,7 +538,8 @@ public class MqttClientHandler extends ChannelDuplexHandler {
         final MqttArticle article = promise.article();
         final MqttQoS qos = article.qos();
         if (qos != MqttQoS.EXACTLY_ONCE) {
-          promise.tryFailure(new MqttQoSException("invalid=" + qos.value() + ", expect=2"));
+          promise.tryFailure(
+              new MqttQoSException("Unexpected QoS: " + qos.value() + " (expected: 2)"));
         } else if (promise.trySuccess(null) || promise.isSuccess()) {
           promise.article().release();
         }
