@@ -17,6 +17,7 @@
 package io.gambusia.mqtt;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -28,6 +29,7 @@ import io.gambusia.mqtt.handler.MqttClientHandler;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
+import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelInitializer;
@@ -45,6 +47,7 @@ import io.netty.util.concurrent.Future;
 import io.netty.util.internal.logging.InternalLoggerFactory;
 import io.netty.util.internal.logging.Log4J2LoggerFactory;
 import java.nio.channels.AlreadyConnectedException;
+import java.nio.channels.ClosedChannelException;
 import java.nio.channels.NotYetConnectedException;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -117,34 +120,30 @@ class MqttAsyncClientTest {
     @Test
     @DisplayName("disconnected")
     void disconnected() throws InterruptedException {
-      MqttArticle article = new MqttArticle(MqttQoS.AT_MOST_ONCE, false, "test", payload());
-      try {
-        Future<?> publish = client.publish(article);
-        assertFalse(publish.await().isSuccess());
-        assertTrue(publish.cause() instanceof NotYetConnectedException);
-      } finally {
-        assertTrue(article.release());
-      }
+      assertThatExceptionOfType(NotYetConnectedException.class).isThrownBy(() -> {
+        Future<?> publish = client.publish0(false, "test", Unpooled.EMPTY_BUFFER);
+        assertFalse(publish.sync().isSuccess());
+      }).withNoCause();
 
-      Future<?> received = client.received(1);
-      assertFalse(received.await().isSuccess());
-      assertTrue(received.cause() instanceof NotYetConnectedException);
+      assertThatExceptionOfType(NotYetConnectedException.class).isThrownBy(() -> {
+        assertFalse(client.received(1).sync().isSuccess());
+      }).withNoCause();
 
-      Future<?> release = client.release(1);
-      assertFalse(release.await().isSuccess());
-      assertTrue(release.cause() instanceof NotYetConnectedException);
+      assertThatExceptionOfType(NotYetConnectedException.class).isThrownBy(() -> {
+        assertFalse(client.release(1).sync().isSuccess());
+      }).withNoCause();
 
-      Future<?> subscribe = client.subscribe(MqttSubscription.qos0("test"));
-      assertFalse(subscribe.await().isSuccess());
-      assertTrue(subscribe.cause() instanceof NotYetConnectedException);
+      assertThatExceptionOfType(NotYetConnectedException.class).isThrownBy(() -> {
+        assertFalse(client.subscribe(MqttSubscription.qos0("test")).sync().isSuccess());
+      }).withNoCause();
 
-      Future<?> unsubscribe = client.unsubscribe("test");
-      assertFalse(unsubscribe.await().isSuccess());
-      assertTrue(unsubscribe.cause() instanceof NotYetConnectedException);
+      assertThatExceptionOfType(NotYetConnectedException.class).isThrownBy(() -> {
+        assertFalse(client.unsubscribe("test").sync().isSuccess());
+      }).withNoCause();
 
-      Future<?> ping = client.ping();
-      assertFalse(ping.await().isSuccess());
-      assertTrue(ping.cause() instanceof NotYetConnectedException);
+      assertThatExceptionOfType(NotYetConnectedException.class).isThrownBy(() -> {
+        assertFalse(client.ping().sync().isSuccess());
+      }).withNoCause();
     }
 
     @Test
@@ -159,20 +158,22 @@ class MqttAsyncClientTest {
       assertThatExceptionOfType(IllegalArgumentException.class)
           .isThrownBy(() -> client.connect(true, 60, 0xFFFF + 1, "test"));
 
-      MqttArticle will = new MqttArticle(MqttQoS.AT_LEAST_ONCE, false, "test/will", payload());
-      String user = "user";
-      byte[] pass = "pass".getBytes(StandardCharsets.UTF_8);
-      Future<MqttConnectResult> future = client.connect(true, 60, 60, "test", will, user, pass);
-      assertTrue(future.sync().isSuccess());
+      assertThatCode(() -> {
+        MqttArticle will = new MqttArticle(MqttQoS.AT_LEAST_ONCE, false, "test/will", payload());
+        String user = "user";
+        byte[] pass = "pass".getBytes(StandardCharsets.UTF_8);
+        Future<MqttConnectResult> future = client.connect(true, 60, 60, "test", will, user, pass);
+        assertTrue(future.sync().isSuccess());
 
-      MqttConnectResult result = future.getNow();
-      assertNotNull(result);
-      assertEquals(0, result.returnCode());
-      assertFalse(result.isSessionPresent());
+        MqttConnectResult result = future.getNow();
+        assertNotNull(result);
+        assertEquals(0, result.returnCode());
+        assertFalse(result.isSessionPresent());
+      }).doesNotThrowAnyException();
 
-      future = client.connect(true, 60, 60, "test");
-      assertFalse(future.await().isSuccess());
-      assertTrue(future.cause() instanceof AlreadyConnectedException);
+      assertThatExceptionOfType(AlreadyConnectedException.class).isThrownBy(() -> {
+        assertFalse(client.connect(true, 60, 60, "test").sync().isSuccess());
+      }).withNoCause();
     }
 
     @Test
@@ -259,12 +260,14 @@ class MqttAsyncClientTest {
 
     @Test
     @DisplayName("subscribe failed")
-    void subscribe_failed() throws InterruptedException {
-      assertFalse(client.subscribe(
-          MqttSubscription.qos2("test/#/2"),
-          MqttSubscription.qos1("test/#/1"),
-          MqttSubscription.qos0("test/#/0"))
-          .await().isSuccess());
+    void subscribe_failed() {
+      assertThatExceptionOfType(ClosedChannelException.class).isThrownBy(() -> {
+        assertFalse(client.subscribe(
+            MqttSubscription.qos2("test/#/2"),
+            MqttSubscription.qos1("test/#/1"),
+            MqttSubscription.qos0("test/#/0"))
+            .sync().isSuccess());
+      });
     }
 
     @Test
@@ -275,8 +278,10 @@ class MqttAsyncClientTest {
 
     @Test
     @DisplayName("unsubscribe failed")
-    void unsubscribe_failed() throws InterruptedException {
-      assertFalse(client.unsubscribe("test/#/2", "test/#/1", "test/#/0").await().isSuccess());
+    void unsubscribe_failed() {
+      assertThatExceptionOfType(ClosedChannelException.class).isThrownBy(() -> {
+        assertFalse(client.unsubscribe("test/#/2", "test/#/1", "test/#/0").sync().isSuccess());
+      });
     }
   }
 
