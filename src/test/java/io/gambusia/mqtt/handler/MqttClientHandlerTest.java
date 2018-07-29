@@ -59,6 +59,7 @@ import io.netty.util.concurrent.Future;
 import io.netty.util.internal.logging.InternalLoggerFactory;
 import io.netty.util.internal.logging.Log4J2LoggerFactory;
 import java.nio.channels.AlreadyConnectedException;
+import java.nio.channels.ConnectionPendingException;
 import java.nio.channels.NotYetConnectedException;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CountDownLatch;
@@ -111,6 +112,21 @@ class MqttClientHandlerTest {
     assertTrue(ch.writeAndFlush(new MqttMessage(DISCONNECT_HEADER)).sync().isSuccess());
     assertTrue(ch.writeInbound("Hello World"));
     assertTrue(ch.writeInbound(new MqttMessage(DISCONNECT_HEADER)));
+  }
+
+  @Test
+  void testConnectionPendingException() {
+    assertThatExceptionOfType(ConnectionPendingException.class).isThrownBy(() -> {
+      Future<?> future1 = client.connect(true, 60, 60, "test");
+      Future<?> future2 = client.connect(true, 60, 60, "test");
+
+      ch.writeInbound(MqttMessageBuilders.connAck()
+          .returnCode(MqttConnectReturnCode.CONNECTION_ACCEPTED).build());
+      assertTrue(future1.sync().isSuccess());
+
+      assertTrue(future2.await(1, TimeUnit.SECONDS));
+      assertFalse(future2.sync().isSuccess());
+    }).withNoCause();
   }
 
   @Test

@@ -81,6 +81,7 @@ import io.netty.util.concurrent.Promise;
 import io.netty.util.concurrent.PromiseNotifier;
 import java.nio.channels.AlreadyConnectedException;
 import java.nio.channels.ClosedChannelException;
+import java.nio.channels.ConnectionPendingException;
 import java.nio.channels.NotYetConnectedException;
 import java.util.ArrayList;
 import java.util.LinkedList;
@@ -103,6 +104,7 @@ public class MqttClientHandler extends ChannelDuplexHandler {
   private final MqttPacketId unsubscribeId = new MqttPacketId();
   private final MqttUnexpectedPacketHandler unexpectedPacketHandler;
 
+  private boolean connected = false;
   private MqttConnectPromise connectPromise = null;
   private final IntObjectMap<MqttPublishPromise> publishPromises = new IntObjectHashMap<>();
   private final IntObjectMap<Promise<Void>> releasePromises = new IntObjectHashMap<>();
@@ -141,7 +143,7 @@ public class MqttClientHandler extends ChannelDuplexHandler {
   }
 
   public boolean isConnected() {
-    return connectPromise != null && connectPromise.isSuccess();
+    return connected;
   }
 
   @Override
@@ -212,6 +214,8 @@ public class MqttClientHandler extends ChannelDuplexHandler {
 
     if (isConnected()) {
       msg.setFailure(new AlreadyConnectedException());
+    } else if (connectPromise != null) {
+      msg.setFailure(new ConnectionPendingException());
     } else {
       final MqttConnectMessage message;
       connectPromise = setTimer(msg);
@@ -239,6 +243,7 @@ public class MqttClientHandler extends ChannelDuplexHandler {
                 msg.username(true),
                 msg.password(true)));
       }
+      connectPromise.addListener(new ConnectStateUpdater());
       startKeepAlive(ctx, connectPromise);
       writeAndTouch(ctx, message, channel);
     }
@@ -467,10 +472,10 @@ public class MqttClientHandler extends ChannelDuplexHandler {
   }
 
   public void connAckRead(ChannelHandlerContext ctx, MqttConnAckMessage msg) throws Exception {
-    if (connectPromise == null) {
-      ctx.fireExceptionCaught(new NotYetConnectedException());
-    } else if (connectPromise.isSuccess()) {
+    if (isConnected()) {
       ctx.fireExceptionCaught(new AlreadyConnectedException());
+    } else if (connectPromise == null) {
+      ctx.fireExceptionCaught(new NotYetConnectedException());
     } else {
       final MqttConnAckVariableHeader variableHeader = msg.variableHeader();
       final MqttConnectReturnCode returnCode = variableHeader.connectReturnCode();
@@ -641,6 +646,14 @@ public class MqttClientHandler extends ChannelDuplexHandler {
     @Override
     public void operationComplete(ChannelFuture future) throws Exception {
       lastWriteTimeNanos = System.nanoTime();
+    }
+  }
+
+  private class ConnectStateUpdater implements FutureListener<MqttConnectResult> {
+    @Override
+    public void operationComplete(Future<MqttConnectResult> connect) throws Exception {
+      connected = connect.isSuccess();
+      connectPromise = null;
     }
   }
 
