@@ -54,7 +54,7 @@ public class MqttAsyncClient {
   }
 
   public MqttAsyncClient(long timeout, TimeUnit unit, MqttPinger pinger) {
-    this(null, timeout, unit, new MqttPinger(timeout, unit));
+    this(null, timeout, unit, pinger);
   }
 
   public MqttAsyncClient(Channel channel, long timeout, TimeUnit unit) {
@@ -96,7 +96,8 @@ public class MqttAsyncClient {
   public Future<MqttConnectResult> connect(boolean cleanSession, int keepAlive, int pingDelay,
       String clientId,
       long timeout, TimeUnit unit) {
-    return connect(cleanSession, keepAlive, pingDelay, clientId, null, null, null, timeout, unit);
+    return connect(cleanSession, keepAlive, pingDelay, clientId, null, null, null,
+        timeout, unit);
   }
 
   public Future<MqttConnectResult> connect(boolean cleanSession, int keepAlive, int pingDelay,
@@ -107,8 +108,8 @@ public class MqttAsyncClient {
   public Future<MqttConnectResult> connect(boolean cleanSession, int keepAlive, int pingDelay,
       String clientId, String username, byte[] password,
       long timeout, TimeUnit unit) {
-    return connect(cleanSession, keepAlive, pingDelay, clientId, null, username, password, timeout,
-        unit);
+    return connect(cleanSession, keepAlive, pingDelay, clientId, null, username, password,
+        timeout, unit);
   }
 
   public Future<MqttConnectResult> connect(boolean cleanSession, int keepAlive, int pingDelay,
@@ -119,7 +120,8 @@ public class MqttAsyncClient {
   public Future<MqttConnectResult> connect(boolean cleanSession, int keepAlive, int pingDelay,
       String clientId, MqttArticle will,
       long timeout, TimeUnit unit) {
-    return connect(cleanSession, keepAlive, pingDelay, clientId, will, null, null, timeout, unit);
+    return connect(cleanSession, keepAlive, pingDelay, clientId, will, null, null,
+        timeout, unit);
   }
 
   // connect base
