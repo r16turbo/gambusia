@@ -77,7 +77,8 @@ class MqttClientHandlerTest {
     InternalLoggerFactory.setDefaultFactory(Log4J2LoggerFactory.INSTANCE);
   }
 
-  private final MqttAsyncClient client = new MqttAsyncClient(10, TimeUnit.SECONDS);
+  private final MqttPinger pinger = new MqttPinger(10, TimeUnit.MILLISECONDS);
+  private final MqttAsyncClient client = new MqttAsyncClient(10, TimeUnit.SECONDS, pinger);
 
   Timer timer;
   EmbeddedChannel ch;
@@ -95,6 +96,28 @@ class MqttClientHandlerTest {
   void tearDown() throws Exception {
     ch.finishAndReleaseAll();
     timer.stop();
+  }
+
+  @Test
+  void testPingerFailed() throws InterruptedException {
+    assertThatCode(() -> {
+      Future<?> future = client.connect(true, 1, 1, "test");
+      ch.writeInbound(MqttMessageBuilders.connAck()
+          .returnCode(MqttConnectReturnCode.CONNECTION_ACCEPTED).build());
+      assertTrue(future.sync().isSuccess());
+      MqttMessage message = ch.readOutbound();
+      assertEquals(MqttMessageType.CONNECT, message.fixedHeader().messageType());
+    }).doesNotThrowAnyException();
+
+    TimeUnit.MILLISECONDS.sleep(1200);
+
+    MqttMessage message = ch.readOutbound();
+    assertEquals(MqttMessageType.PINGREQ, message.fixedHeader().messageType());
+
+    TimeUnit.MILLISECONDS.sleep(300);
+
+    assertThatExceptionOfType(TimeoutException.class).isThrownBy(() -> ch.checkException());
+    assertFalse(ch.isActive());
   }
 
   @Test
