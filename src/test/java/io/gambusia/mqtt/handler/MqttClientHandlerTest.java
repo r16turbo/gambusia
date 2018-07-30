@@ -360,6 +360,48 @@ class MqttClientHandlerTest {
   }
 
   @Test
+  void testMqttDuplicateIdException() throws InterruptedException {
+    assertThatCode(() -> {
+      Future<?> future = client.connect(true, 60, 60, "test");
+      ch.writeInbound(MqttMessageBuilders.connAck()
+          .returnCode(MqttConnectReturnCode.CONNECTION_ACCEPTED).build());
+      assertTrue(future.sync().isSuccess());
+      MqttMessage message = ch.readOutbound();
+      assertEquals(MqttMessageType.CONNECT, message.fixedHeader().messageType());
+    }).doesNotThrowAnyException();
+
+    assertThatCode(() -> {
+      for (int i = MqttPacketId.MIN_VALUE; i <= MqttPacketId.MAX_VALUE; i++) {
+        client.publish1(false, "test", Unpooled.EMPTY_BUFFER, 0, TimeUnit.SECONDS);
+        client.received(1, 0, TimeUnit.SECONDS);
+        client.release(1, 0, TimeUnit.SECONDS);
+        client.subscribe(0, TimeUnit.SECONDS, MqttSubscription.qos0("test"));
+        client.unsubscribe(0, TimeUnit.SECONDS, "test");
+      }
+    }).doesNotThrowAnyException();
+
+    assertThatExceptionOfType(MqttDuplicateIdException.class).isThrownBy(() -> {
+      client.publish1(false, "test", Unpooled.EMPTY_BUFFER, 0, TimeUnit.SECONDS).sync();
+    }).withNoCause().withMessage("Duplicate packet: type=PUBLISH, packetId=1");
+
+    assertThatExceptionOfType(MqttDuplicateIdException.class).isThrownBy(() -> {
+      client.received(1, 0, TimeUnit.SECONDS).sync();
+    }).withNoCause().withMessage("Duplicate packet: type=PUBREC, packetId=1");
+
+    assertThatExceptionOfType(MqttDuplicateIdException.class).isThrownBy(() -> {
+      client.release(1, 0, TimeUnit.SECONDS).sync();
+    }).withNoCause().withMessage("Duplicate packet: type=PUBREL, packetId=1");
+
+    assertThatExceptionOfType(MqttDuplicateIdException.class).isThrownBy(() -> {
+      client.subscribe(0, TimeUnit.SECONDS, MqttSubscription.qos0("test")).sync();
+    }).withNoCause().withMessage("Duplicate packet: type=SUBSCRIBE, packetId=1");
+
+    assertThatExceptionOfType(MqttDuplicateIdException.class).isThrownBy(() -> {
+      client.unsubscribe(0, TimeUnit.SECONDS, "test").sync();
+    }).withNoCause().withMessage("Duplicate packet: type=UNSUBSCRIBE, packetId=1");
+  }
+
+  @Test
   void testMqttUnexpectedIdException() throws InterruptedException {
     assertThatCode(() -> {
       Future<?> future = client.connect(true, 60, 60, "test");
