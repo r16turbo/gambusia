@@ -266,6 +266,9 @@ public class MqttClientHandler extends ChannelDuplexHandler {
     } else {
       final MqttArticle article = msg.article();
       final int packetId;
+      final ByteBuf payload;
+      final MqttPublishPromise promise;
+      final MqttPublishMessage message;
       switch (article.qos()) {
         case AT_LEAST_ONCE:
         case EXACTLY_ONCE:
@@ -275,44 +278,37 @@ public class MqttClientHandler extends ChannelDuplexHandler {
             packetId = publishId.getAndIncrement();
             msg.packetId(packetId);
           }
-          break;
-        default:
-          packetId = 0;
-          break;
-      }
-      if (packetId > 0 && null != publishPromises.putIfAbsent(packetId, msg)) {
-        msg.setFailure(new MqttDuplicateIdException(MqttMessageType.PUBLISH, packetId));
-      } else {
-        final ByteBuf payload;
-        final MqttPublishPromise promise;
-        final MqttPublishMessage message;
-        if (packetId == 0) {
-          // QoS 0
-          payload = article.payload();
-          promise = msg;
-          // channel(notify) -> promise
-          channel.addListener(new PromiseNotifier<Void, ChannelFuture>(promise));
-        } else {
+          if (null != publishPromises.putIfAbsent(packetId, msg)) {
+            msg.setFailure(new MqttDuplicateIdException(MqttMessageType.PUBLISH, packetId));
+            return;
+          }
           // QoS 1,2
           payload = article.payload().retain();
           promise = setTimer(msg);
           promise.addListener(new PromiseRemover<>(publishPromises, packetId, promise));
           // channel(cancel, failure) -> promise
           channel.addListener(new PromiseCanceller<>(promise));
-        }
-        { // create mqtt message
-          message = new MqttPublishMessage(
-              new MqttFixedHeader(MqttMessageType.PUBLISH,
-                  promise.isDuplicate(),
-                  article.qos(),
-                  article.isRetain(),
-                  0 // Remaining Length (don't care)
-              ),
-              new MqttPublishVariableHeader(article.topic(), packetId),
-              payload);
-        }
-        writeAndTouch(ctx, message, channel);
+          break;
+        default:
+          packetId = 0;
+          // QoS 0
+          payload = article.payload();
+          promise = msg;
+          // channel(notify) -> promise
+          channel.addListener(new PromiseNotifier<Void, ChannelFuture>(promise));
+          break;
       }
+      // create mqtt message
+      message = new MqttPublishMessage(
+          new MqttFixedHeader(MqttMessageType.PUBLISH,
+              promise.isDuplicate(),
+              article.qos(),
+              article.isRetain(),
+              0 // Remaining Length (don't care)
+          ),
+          new MqttPublishVariableHeader(article.topic(), packetId),
+          payload);
+      writeAndTouch(ctx, message, channel);
     }
   }
 
