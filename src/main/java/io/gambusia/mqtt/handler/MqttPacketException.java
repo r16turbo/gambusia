@@ -16,11 +16,26 @@
 
 package io.gambusia.mqtt.handler;
 
-public class MqttQoSException extends Exception {
+import io.netty.handler.codec.mqtt.MqttMessageType;
 
-  private static final long serialVersionUID = -5193922421129293621L;
+public class MqttPacketException extends IllegalStateException {
 
-  public MqttQoSException(String message) {
+  private static final long serialVersionUID = 8859800976034950713L;
+
+  private final MqttMessageType messageType;
+  private final int packetId;
+
+  public MqttPacketException(String message, MqttMessageType messageType, int packetId) {
     super(message);
+    this.messageType = messageType;
+    this.packetId = packetId;
+  }
+
+  public MqttMessageType messageType() {
+    return messageType;
+  }
+
+  public int packetId() {
+    return packetId;
   }
 }

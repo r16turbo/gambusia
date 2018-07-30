@@ -401,7 +401,7 @@ class MqttClientHandlerTest {
   }
 
   @Test
-  void testMqttQoSException() throws InterruptedException {
+  void testMqttUnexpectedQoSException() throws InterruptedException {
     assertThatCode(() -> {
       Future<?> future = client.connect(true, 60, 60, "test");
       ch.writeInbound(MqttMessageBuilders.connAck()
@@ -411,13 +411,13 @@ class MqttClientHandlerTest {
       assertEquals(MqttMessageType.CONNECT, message.fixedHeader().messageType());
     }).doesNotThrowAnyException();
 
-    assertThatExceptionOfType(MqttQoSException.class).isThrownBy(() -> {
+    assertThatExceptionOfType(MqttUnexpectedQoSException.class).isThrownBy(() -> {
       Future<?> future = client.publish1(false, "test", Unpooled.EMPTY_BUFFER);
       ch.writeInbound(new MqttMessage(PUBREC_HEADER, MqttMessageIdVariableHeader.from(1)));
       assertFalse(future.sync().isSuccess());
     }).withNoCause();
 
-    assertThatExceptionOfType(MqttQoSException.class).isThrownBy(() -> {
+    assertThatExceptionOfType(MqttUnexpectedQoSException.class).isThrownBy(() -> {
       Future<?> future = client.publish2(false, "test", Unpooled.EMPTY_BUFFER);
       ch.writeInbound(new MqttMessage(PUBACK_HEADER, MqttMessageIdVariableHeader.from(2)));
       assertFalse(future.sync().isSuccess());

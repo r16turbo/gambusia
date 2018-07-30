@@ -19,6 +19,7 @@ package io.gambusia.mqtt.handler;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 import io.netty.handler.codec.mqtt.MqttMessageType;
 import io.netty.handler.codec.mqtt.MqttQoS;
@@ -64,50 +65,60 @@ class ExceptionsTest {
   void testMqttDuplicateIdException() {
     MqttDuplicateIdException e;
     assertThat(e = new MqttDuplicateIdException(MqttMessageType.PUBLISH, 1))
-        .hasNoCause().hasMessage("Duplicate message: type=PUBLISH, packetId=1");
-    assertEquals(e.messageType(), MqttMessageType.PUBLISH);
-    assertEquals(e.packetId(), 1);
+        .hasNoCause().hasMessage("Duplicate packet: type=PUBLISH, packetId=1");
+    assertEquals(MqttMessageType.PUBLISH, e.messageType());
+    assertEquals(1, e.packetId());
 
     assertThat(e = new MqttDuplicateIdException(MqttMessageType.SUBSCRIBE, 2))
-        .hasNoCause().hasMessage("Duplicate message: type=SUBSCRIBE, packetId=2");
-    assertEquals(e.messageType(), MqttMessageType.SUBSCRIBE);
-    assertEquals(e.packetId(), 2);
+        .hasNoCause().hasMessage("Duplicate packet: type=SUBSCRIBE, packetId=2");
+    assertEquals(MqttMessageType.SUBSCRIBE, e.messageType());
+    assertEquals(2, e.packetId());
 
     assertThat(e = new MqttDuplicateIdException(MqttMessageType.UNSUBSCRIBE, 3))
-        .hasNoCause().hasMessage("Duplicate message: type=UNSUBSCRIBE, packetId=3");
-    assertEquals(e.messageType(), MqttMessageType.UNSUBSCRIBE);
-    assertEquals(e.packetId(), 3);
+        .hasNoCause().hasMessage("Duplicate packet: type=UNSUBSCRIBE, packetId=3");
+    assertEquals(MqttMessageType.UNSUBSCRIBE, e.messageType());
+    assertEquals(3, e.packetId());
   }
 
   @Test
   void testMqttUnexpectedIdException() {
     MqttUnexpectedIdException e;
     assertThat(e = new MqttUnexpectedIdException(MqttMessageType.PUBACK, 1))
-        .hasNoCause().hasMessage("Unexpected message: type=PUBACK, packetId=1");
-    assertEquals(e.messageType(), MqttMessageType.PUBACK);
-    assertEquals(e.packetId(), 1);
+        .hasNoCause().hasMessage("Unexpected packet: type=PUBACK, packetId=1");
+    assertEquals(MqttMessageType.PUBACK, e.messageType());
+    assertEquals(1, e.packetId());
 
     assertThat(e = new MqttUnexpectedIdException(MqttMessageType.SUBACK, 2))
-        .hasNoCause().hasMessage("Unexpected message: type=SUBACK, packetId=2");
-    assertEquals(e.messageType(), MqttMessageType.SUBACK);
-    assertEquals(e.packetId(), 2);
+        .hasNoCause().hasMessage("Unexpected packet: type=SUBACK, packetId=2");
+    assertEquals(MqttMessageType.SUBACK, e.messageType());
+    assertEquals(2, e.packetId());
 
     assertThat(e = new MqttUnexpectedIdException(MqttMessageType.UNSUBACK, 3))
-        .hasNoCause().hasMessage("Unexpected message: type=UNSUBACK, packetId=3");
-    assertEquals(e.messageType(), MqttMessageType.UNSUBACK);
-    assertEquals(e.packetId(), 3);
+        .hasNoCause().hasMessage("Unexpected packet: type=UNSUBACK, packetId=3");
+    assertEquals(MqttMessageType.UNSUBACK, e.messageType());
+    assertEquals(3, e.packetId());
   }
 
   @Test
   void testMqttQoSException() {
-    MqttQoS qos;
+    MqttUnexpectedQoSException e;
 
-    qos = MqttQoS.EXACTLY_ONCE;
-    assertThat(new MqttQoSException("Unexpected QoS: " + qos.value() + " (expected: 1)"))
-        .hasNoCause().hasMessage("Unexpected QoS: 2 (expected: 1)");
+    assertThat(e = new MqttUnexpectedQoSException(MqttMessageType.PUBACK, 1, null))
+        .hasNoCause().hasMessage("Unexpected packet: type=PUBACK, packetId=1, qos=null");
+    assertEquals(MqttMessageType.PUBACK, e.messageType());
+    assertEquals(1, e.packetId());
+    assertNull(e.qos());
 
-    qos = MqttQoS.AT_LEAST_ONCE;
-    assertThat(new MqttQoSException("Unexpected QoS: " + qos.value() + " (expected: 2)"))
-        .hasNoCause().hasMessage("Unexpected QoS: 1 (expected: 2)");
+    assertThat(e = new MqttUnexpectedQoSException(MqttMessageType.PUBACK, 2, MqttQoS.AT_MOST_ONCE))
+        .hasNoCause().hasMessage("Unexpected packet: type=PUBACK, packetId=2, qos=AT_MOST_ONCE");
+    assertEquals(MqttMessageType.PUBACK, e.messageType());
+    assertEquals(2, e.packetId());
+    assertEquals(MqttQoS.AT_MOST_ONCE, e.qos());
+
+    assertThat(e = new MqttUnexpectedQoSException(MqttMessageType.PUBREC, 3, MqttQoS.AT_LEAST_ONCE))
+        .hasNoCause().hasMessage("Unexpected packet: type=PUBREC, packetId=3, qos=AT_LEAST_ONCE");
+    assertEquals(MqttMessageType.PUBREC, e.messageType());
+    assertEquals(3, e.packetId());
+    assertEquals(MqttQoS.AT_LEAST_ONCE, e.qos());
   }
 }

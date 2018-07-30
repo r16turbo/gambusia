@@ -17,13 +17,21 @@
 package io.gambusia.mqtt.handler;
 
 import io.netty.handler.codec.mqtt.MqttMessageType;
+import io.netty.handler.codec.mqtt.MqttQoS;
 
-public class MqttUnexpectedIdException extends MqttPacketException {
+public class MqttUnexpectedQoSException extends MqttPacketException {
 
-  private static final long serialVersionUID = -512952074056123171L;
+  private static final long serialVersionUID = 6352002242649565825L;
 
-  public MqttUnexpectedIdException(MqttMessageType messageType, int packetId) {
-    super("Unexpected packet: type=" + messageType + ", packetId=" + packetId,
+  private final MqttQoS qos;
+
+  public MqttUnexpectedQoSException(MqttMessageType messageType, int packetId, MqttQoS qos) {
+    super("Unexpected packet: type=" + messageType + ", packetId=" + packetId + ", qos=" + qos,
         messageType, packetId);
+    this.qos = qos;
+  }
+
+  public MqttQoS qos() {
+    return qos;
   }
 }
