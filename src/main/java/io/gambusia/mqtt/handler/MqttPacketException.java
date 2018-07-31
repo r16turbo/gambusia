@@ -25,9 +25,15 @@ public class MqttPacketException extends IllegalStateException {
   private final MqttMessageType messageType;
   private final int packetId;
 
-  public MqttPacketException(String message, MqttMessageType messageType, int packetId) {
+  public MqttPacketException(String message, MqttMessageType type, int packetId) {
     super(message);
-    this.messageType = messageType;
+    this.messageType = type;
+    this.packetId = packetId;
+  }
+
+  public MqttPacketException(String message, MqttMessageType type, int packetId, Throwable cause) {
+    super(message, cause);
+    this.messageType = type;
     this.packetId = packetId;
   }
 

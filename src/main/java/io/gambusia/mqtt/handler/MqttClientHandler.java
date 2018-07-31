@@ -84,6 +84,7 @@ import java.nio.channels.NotYetConnectedException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.ListIterator;
+import java.util.NoSuchElementException;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -472,11 +473,11 @@ public class MqttClientHandler extends ChannelDuplexHandler {
 
   public void connAckRead(ChannelHandlerContext ctx, MqttConnAckMessage msg) throws Exception {
     if (isConnected()) {
-      ctx.fireExceptionCaught(new AlreadyConnectedException());
+      unexpectedPacketHandler.connAck(ctx, new AlreadyConnectedException());
     } else {
       final MqttConnectPromise promise = connectPromise.getAndSet(null);
       if (promise == null) {
-        ctx.fireExceptionCaught(new NotYetConnectedException());
+        unexpectedPacketHandler.connAck(ctx, new NoSuchElementException("No promise"));
       } else {
         final MqttConnAckVariableHeader variableHeader = msg.variableHeader();
         final MqttConnectReturnCode returnCode = variableHeader.connectReturnCode();
@@ -504,13 +505,13 @@ public class MqttClientHandler extends ChannelDuplexHandler {
   }
 
   public void pubAckRead(ChannelHandlerContext ctx, MqttMessage msg) throws Exception {
+    final int packetId = ((MqttMessageIdVariableHeader) msg.variableHeader()).messageId();
     if (!isConnected()) {
-      ctx.fireExceptionCaught(new NotYetConnectedException());
+      unexpectedPacketHandler.pubAck(ctx, packetId, new NotYetConnectedException());
     } else {
-      final int packetId = ((MqttMessageIdVariableHeader) msg.variableHeader()).messageId();
       final MqttPublishPromise promise = publishPromises.remove(packetId);
       if (promise == null) {
-        unexpectedPacketHandler.pubAckRead(ctx, packetId);
+        unexpectedPacketHandler.pubAck(ctx, packetId, new NoSuchElementException("No promise"));
       } else {
         final MqttArticle article = promise.article();
         final MqttQoS qos = article.qos();
@@ -524,13 +525,13 @@ public class MqttClientHandler extends ChannelDuplexHandler {
   }
 
   public void pubRecRead(ChannelHandlerContext ctx, MqttMessage msg) throws Exception {
+    final int packetId = ((MqttMessageIdVariableHeader) msg.variableHeader()).messageId();
     if (!isConnected()) {
-      ctx.fireExceptionCaught(new NotYetConnectedException());
+      unexpectedPacketHandler.pubRec(ctx, packetId, new NotYetConnectedException());
     } else {
-      final int packetId = ((MqttMessageIdVariableHeader) msg.variableHeader()).messageId();
       final MqttPublishPromise promise = publishPromises.remove(packetId);
       if (promise == null) {
-        unexpectedPacketHandler.pubRecRead(ctx, packetId);
+        unexpectedPacketHandler.pubRec(ctx, packetId, new NoSuchElementException("No promise"));
       } else {
         final MqttArticle article = promise.article();
         final MqttQoS qos = article.qos();
@@ -544,13 +545,13 @@ public class MqttClientHandler extends ChannelDuplexHandler {
   }
 
   public void pubRelRead(ChannelHandlerContext ctx, MqttMessage msg) throws Exception {
+    final int packetId = ((MqttMessageIdVariableHeader) msg.variableHeader()).messageId();
     if (!isConnected()) {
-      ctx.fireExceptionCaught(new NotYetConnectedException());
+      unexpectedPacketHandler.pubRel(ctx, packetId, new NotYetConnectedException());
     } else {
-      final int packetId = ((MqttMessageIdVariableHeader) msg.variableHeader()).messageId();
       final Promise<Void> promise = receivePromises.remove(packetId);
       if (promise == null) {
-        unexpectedPacketHandler.pubRelRead(ctx, packetId);
+        unexpectedPacketHandler.pubRel(ctx, packetId, new NoSuchElementException("No promise"));
       } else {
         promise.trySuccess(null);
       }
@@ -558,13 +559,13 @@ public class MqttClientHandler extends ChannelDuplexHandler {
   }
 
   public void pubCompRead(ChannelHandlerContext ctx, MqttMessage msg) throws Exception {
+    final int packetId = ((MqttMessageIdVariableHeader) msg.variableHeader()).messageId();
     if (!isConnected()) {
-      ctx.fireExceptionCaught(new NotYetConnectedException());
+      unexpectedPacketHandler.pubComp(ctx, packetId, new NotYetConnectedException());
     } else {
-      final int packetId = ((MqttMessageIdVariableHeader) msg.variableHeader()).messageId();
       final Promise<Void> promise = releasePromises.remove(packetId);
       if (promise == null) {
-        unexpectedPacketHandler.pubCompRead(ctx, packetId);
+        unexpectedPacketHandler.pubComp(ctx, packetId, new NoSuchElementException("No promise"));
       } else {
         promise.trySuccess(null);
       }
@@ -572,14 +573,14 @@ public class MqttClientHandler extends ChannelDuplexHandler {
   }
 
   public void subAckRead(ChannelHandlerContext ctx, MqttSubAckMessage msg) throws Exception {
+    final int packetId = msg.variableHeader().messageId();
     if (!isConnected()) {
-      ctx.fireExceptionCaught(new NotYetConnectedException());
+      unexpectedPacketHandler.subAck(ctx, packetId, new NotYetConnectedException());
     } else {
       final MqttSubAckPayload payload = msg.payload();
-      final int packetId = msg.variableHeader().messageId();
       final Promise<MqttQoS[]> promise = subscribePromises.remove(packetId);
       if (promise == null) {
-        unexpectedPacketHandler.subAckRead(ctx, packetId);
+        unexpectedPacketHandler.subAck(ctx, packetId, new NoSuchElementException("No promise"));
       } else {
         MqttQoS[] qosLevels = new MqttQoS[payload.grantedQoSLevels().size()];
         ListIterator<Integer> iterator = payload.grantedQoSLevels().listIterator();
@@ -592,13 +593,13 @@ public class MqttClientHandler extends ChannelDuplexHandler {
   }
 
   public void unsubAckRead(ChannelHandlerContext ctx, MqttUnsubAckMessage msg) throws Exception {
+    final int packetId = msg.variableHeader().messageId();
     if (!isConnected()) {
-      ctx.fireExceptionCaught(new NotYetConnectedException());
+      unexpectedPacketHandler.unsubAck(ctx, packetId, new NotYetConnectedException());
     } else {
-      final int packetId = msg.variableHeader().messageId();
       final Promise<Void> promise = unsubscribePromises.remove(packetId);
       if (promise == null) {
-        unexpectedPacketHandler.unsubAckRead(ctx, packetId);
+        unexpectedPacketHandler.unsubAck(ctx, packetId, new NoSuchElementException("No promise"));
       } else {
         promise.trySuccess(null);
       }

@@ -22,8 +22,7 @@ public class MqttDuplicatePacketException extends MqttPacketException {
 
   private static final long serialVersionUID = -5651519169441099046L;
 
-  public MqttDuplicatePacketException(MqttMessageType messageType, int packetId) {
-    super("Duplicate packet: type=" + messageType + ", packetId=" + packetId,
-        messageType, packetId);
+  public MqttDuplicatePacketException(MqttMessageType type, int packetId) {
+    super("Duplicate packet: type=" + type + ", packetId=" + packetId, type, packetId);
   }
 }

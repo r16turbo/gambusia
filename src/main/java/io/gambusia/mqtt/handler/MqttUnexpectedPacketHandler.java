@@ -22,31 +22,47 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.mqtt.MqttMessage;
 import io.netty.handler.codec.mqtt.MqttMessageIdVariableHeader;
 import io.netty.handler.codec.mqtt.MqttMessageType;
+import java.util.NoSuchElementException;
 
 public class MqttUnexpectedPacketHandler {
 
-  public void pubAckRead(ChannelHandlerContext ctx, int packetId) throws Exception {
-    ctx.fireExceptionCaught(new MqttUnexpectedPacketException(MqttMessageType.PUBACK, packetId));
+  public void connAck(ChannelHandlerContext ctx, Throwable cause) throws Exception {
+    ctx.fireExceptionCaught(
+        new MqttUnexpectedPacketException(MqttMessageType.CONNACK, cause));
   }
 
-  public void pubRecRead(ChannelHandlerContext ctx, int packetId) throws Exception {
-    ctx.fireExceptionCaught(new MqttUnexpectedPacketException(MqttMessageType.PUBREC, packetId));
+  public void pubAck(ChannelHandlerContext ctx, int packetId, Throwable cause) throws Exception {
+    ctx.fireExceptionCaught(
+        new MqttUnexpectedPacketException(MqttMessageType.PUBACK, packetId, cause));
   }
 
-  public void pubRelRead(ChannelHandlerContext ctx, int packetId) throws Exception {
-    ctx.channel().writeAndFlush(new MqttMessage(PUBCOMP_HEADER,
-        MqttMessageIdVariableHeader.from(packetId)));
+  public void pubRec(ChannelHandlerContext ctx, int packetId, Throwable cause) throws Exception {
+    ctx.fireExceptionCaught(
+        new MqttUnexpectedPacketException(MqttMessageType.PUBREC, packetId, cause));
   }
 
-  public void pubCompRead(ChannelHandlerContext ctx, int packetId) throws Exception {
-    ctx.fireExceptionCaught(new MqttUnexpectedPacketException(MqttMessageType.PUBCOMP, packetId));
+  public void pubRel(ChannelHandlerContext ctx, int packetId, Throwable cause) throws Exception {
+    if (cause instanceof NoSuchElementException) {
+      ctx.channel().writeAndFlush(
+          new MqttMessage(PUBCOMP_HEADER, MqttMessageIdVariableHeader.from(packetId)));
+    } else {
+      ctx.fireExceptionCaught(
+          new MqttUnexpectedPacketException(MqttMessageType.PUBREL, packetId, cause));
+    }
   }
 
-  public void subAckRead(ChannelHandlerContext ctx, int packetId) throws Exception {
-    ctx.fireExceptionCaught(new MqttUnexpectedPacketException(MqttMessageType.SUBACK, packetId));
+  public void pubComp(ChannelHandlerContext ctx, int packetId, Throwable cause) throws Exception {
+    ctx.fireExceptionCaught(
+        new MqttUnexpectedPacketException(MqttMessageType.PUBCOMP, packetId, cause));
   }
 
-  public void unsubAckRead(ChannelHandlerContext ctx, int packetId) throws Exception {
-    ctx.fireExceptionCaught(new MqttUnexpectedPacketException(MqttMessageType.UNSUBACK, packetId));
+  public void subAck(ChannelHandlerContext ctx, int packetId, Throwable cause) throws Exception {
+    ctx.fireExceptionCaught(
+        new MqttUnexpectedPacketException(MqttMessageType.SUBACK, packetId, cause));
+  }
+
+  public void unsubAck(ChannelHandlerContext ctx, int packetId, Throwable cause) throws Exception {
+    ctx.fireExceptionCaught(
+        new MqttUnexpectedPacketException(MqttMessageType.UNSUBACK, packetId, cause));
   }
 }

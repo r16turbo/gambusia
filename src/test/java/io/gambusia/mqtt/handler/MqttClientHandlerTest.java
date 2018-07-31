@@ -62,6 +62,7 @@ import java.nio.channels.AlreadyConnectedException;
 import java.nio.channels.ConnectionPendingException;
 import java.nio.channels.NotYetConnectedException;
 import java.nio.charset.StandardCharsets;
+import java.util.NoSuchElementException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -201,6 +202,39 @@ class MqttClientHandlerTest {
   }
 
   @Test
+  void testNotYetConnectedException() {
+    assertThatExceptionOfType(MqttUnexpectedPacketException.class).isThrownBy(() -> {
+      ch.writeInbound(new MqttMessage(PUBACK_HEADER, MqttMessageIdVariableHeader.from(1)));
+    }).withCauseExactlyInstanceOf(NotYetConnectedException.class);
+
+    assertThatExceptionOfType(MqttUnexpectedPacketException.class).isThrownBy(() -> {
+      ch.writeInbound(new MqttMessage(PUBREC_HEADER, MqttMessageIdVariableHeader.from(1)));
+    }).withCauseExactlyInstanceOf(NotYetConnectedException.class);
+
+    assertThatExceptionOfType(MqttUnexpectedPacketException.class).isThrownBy(() -> {
+      ch.writeInbound(new MqttMessage(PUBREL_HEADER, MqttMessageIdVariableHeader.from(1)));
+    }).withCauseExactlyInstanceOf(NotYetConnectedException.class);
+
+    assertThatExceptionOfType(MqttUnexpectedPacketException.class).isThrownBy(() -> {
+      ch.writeInbound(new MqttMessage(PUBCOMP_HEADER, MqttMessageIdVariableHeader.from(1)));
+    }).withCauseExactlyInstanceOf(NotYetConnectedException.class);
+
+    assertThatExceptionOfType(MqttUnexpectedPacketException.class).isThrownBy(() -> {
+      ch.writeInbound(new MqttSubAckMessage(SUBACK_HEADER,
+          MqttMessageIdVariableHeader.from(1), new MqttSubAckPayload(1)));
+    }).withCauseExactlyInstanceOf(NotYetConnectedException.class);
+
+    assertThatExceptionOfType(MqttUnexpectedPacketException.class).isThrownBy(() -> {
+      ch.writeInbound(new MqttUnsubAckMessage(UNSUBACK_HEADER,
+          MqttMessageIdVariableHeader.from(1)));
+    }).withCauseExactlyInstanceOf(NotYetConnectedException.class);
+
+    assertThatCode(() -> {
+      ch.writeInbound(new MqttMessage(PINGRESP_HEADER));
+    }).doesNotThrowAnyException();
+  }
+
+  @Test
   void testAlreadyConnectedException() throws InterruptedException {
     assertThatCode(() -> {
       String username = "username";
@@ -227,46 +261,54 @@ class MqttClientHandlerTest {
       assertEquals(MqttMessageType.CONNECT, message.fixedHeader().messageType());
     }).doesNotThrowAnyException();
 
-    assertThatExceptionOfType(AlreadyConnectedException.class).isThrownBy(() -> {
+    assertThatExceptionOfType(MqttUnexpectedPacketException.class).isThrownBy(() -> {
       ch.writeInbound(MqttMessageBuilders.connAck()
           .returnCode(MqttConnectReturnCode.CONNECTION_ACCEPTED).build());
-    }).withNoCause();
+    }).withCauseExactlyInstanceOf(AlreadyConnectedException.class);
   }
 
   @Test
-  void testNotYetConnectedException() {
-    assertThatExceptionOfType(NotYetConnectedException.class).isThrownBy(() -> {
+  void testNoSuchElementException() throws InterruptedException {
+    assertThatExceptionOfType(MqttUnexpectedPacketException.class).isThrownBy(() -> {
       ch.writeInbound(MqttMessageBuilders.connAck().build());
-    }).withNoCause();
-
-    assertThatExceptionOfType(NotYetConnectedException.class).isThrownBy(() -> {
-      ch.writeInbound(new MqttMessage(PUBACK_HEADER, MqttMessageIdVariableHeader.from(1)));
-    }).withNoCause();
-
-    assertThatExceptionOfType(NotYetConnectedException.class).isThrownBy(() -> {
-      ch.writeInbound(new MqttMessage(PUBREC_HEADER, MqttMessageIdVariableHeader.from(1)));
-    }).withNoCause();
-
-    assertThatExceptionOfType(NotYetConnectedException.class).isThrownBy(() -> {
-      ch.writeInbound(new MqttMessage(PUBREL_HEADER, MqttMessageIdVariableHeader.from(1)));
-    }).withNoCause();
-
-    assertThatExceptionOfType(NotYetConnectedException.class).isThrownBy(() -> {
-      ch.writeInbound(new MqttMessage(PUBCOMP_HEADER, MqttMessageIdVariableHeader.from(1)));
-    }).withNoCause();
-
-    assertThatExceptionOfType(NotYetConnectedException.class).isThrownBy(() -> {
-      ch.writeInbound(new MqttSubAckMessage(SUBACK_HEADER,
-          MqttMessageIdVariableHeader.from(1), new MqttSubAckPayload(1)));
-    }).withNoCause();
-
-    assertThatExceptionOfType(NotYetConnectedException.class).isThrownBy(() -> {
-      ch.writeInbound(new MqttUnsubAckMessage(UNSUBACK_HEADER,
-          MqttMessageIdVariableHeader.from(1)));
-    }).withNoCause();
+    }).withCauseExactlyInstanceOf(NoSuchElementException.class);
 
     assertThatCode(() -> {
-      ch.writeInbound(new MqttMessage(PINGRESP_HEADER));
+      Future<?> future = client.connect(true, 60, 60, "test");
+      ch.writeInbound(MqttMessageBuilders.connAck()
+          .returnCode(MqttConnectReturnCode.CONNECTION_ACCEPTED).build());
+      assertTrue(future.sync().isSuccess());
+      MqttMessage message = ch.readOutbound();
+      assertEquals(MqttMessageType.CONNECT, message.fixedHeader().messageType());
+    }).doesNotThrowAnyException();
+
+    assertThatExceptionOfType(MqttUnexpectedPacketException.class).isThrownBy(() -> {
+      ch.writeInbound(new MqttMessage(PUBACK_HEADER, MqttMessageIdVariableHeader.from(1)));
+    }).withCauseExactlyInstanceOf(NoSuchElementException.class);
+
+    assertThatExceptionOfType(MqttUnexpectedPacketException.class).isThrownBy(() -> {
+      ch.writeInbound(new MqttMessage(PUBREC_HEADER, MqttMessageIdVariableHeader.from(1)));
+    }).withCauseExactlyInstanceOf(NoSuchElementException.class);
+
+    assertThatExceptionOfType(MqttUnexpectedPacketException.class).isThrownBy(() -> {
+      ch.writeInbound(new MqttMessage(PUBCOMP_HEADER, MqttMessageIdVariableHeader.from(1)));
+    }).withCauseExactlyInstanceOf(NoSuchElementException.class);
+
+    assertThatExceptionOfType(MqttUnexpectedPacketException.class).isThrownBy(() -> {
+      ch.writeInbound(new MqttSubAckMessage(SUBACK_HEADER,
+          MqttMessageIdVariableHeader.from(1), new MqttSubAckPayload(1)));
+    }).withCauseExactlyInstanceOf(NoSuchElementException.class);
+
+    assertThatExceptionOfType(MqttUnexpectedPacketException.class).isThrownBy(() -> {
+      ch.writeInbound(new MqttUnsubAckMessage(UNSUBACK_HEADER,
+          MqttMessageIdVariableHeader.from(1)));
+    }).withCauseExactlyInstanceOf(NoSuchElementException.class);
+
+    assertThatCode(() -> {
+      ch.writeInbound(new MqttMessage(PUBREL_HEADER, MqttMessageIdVariableHeader.from(1)));
+      MqttMessage message = ch.readOutbound();
+      assertEquals(MqttMessageType.PUBCOMP, message.fixedHeader().messageType());
+      assertEquals(1, ((MqttMessageIdVariableHeader) message.variableHeader()).messageId());
     }).doesNotThrowAnyException();
   }
 
@@ -399,47 +441,6 @@ class MqttClientHandlerTest {
     assertThatExceptionOfType(MqttDuplicatePacketException.class).isThrownBy(() -> {
       client.unsubscribe(0, TimeUnit.SECONDS, "test").sync();
     }).withNoCause().withMessage("Duplicate packet: type=UNSUBSCRIBE, packetId=1");
-  }
-
-  @Test
-  void testMqttUnexpectedPacketException() throws InterruptedException {
-    assertThatCode(() -> {
-      Future<?> future = client.connect(true, 60, 60, "test");
-      ch.writeInbound(MqttMessageBuilders.connAck()
-          .returnCode(MqttConnectReturnCode.CONNECTION_ACCEPTED).build());
-      assertTrue(future.sync().isSuccess());
-      MqttMessage message = ch.readOutbound();
-      assertEquals(MqttMessageType.CONNECT, message.fixedHeader().messageType());
-    }).doesNotThrowAnyException();
-
-    assertThatExceptionOfType(MqttUnexpectedPacketException.class).isThrownBy(() -> {
-      ch.writeInbound(new MqttMessage(PUBACK_HEADER, MqttMessageIdVariableHeader.from(1)));
-    }).withNoCause();
-
-    assertThatExceptionOfType(MqttUnexpectedPacketException.class).isThrownBy(() -> {
-      ch.writeInbound(new MqttMessage(PUBREC_HEADER, MqttMessageIdVariableHeader.from(1)));
-    }).withNoCause();
-
-    assertThatExceptionOfType(MqttUnexpectedPacketException.class).isThrownBy(() -> {
-      ch.writeInbound(new MqttMessage(PUBCOMP_HEADER, MqttMessageIdVariableHeader.from(1)));
-    }).withNoCause();
-
-    assertThatExceptionOfType(MqttUnexpectedPacketException.class).isThrownBy(() -> {
-      ch.writeInbound(new MqttSubAckMessage(SUBACK_HEADER,
-          MqttMessageIdVariableHeader.from(1), new MqttSubAckPayload(1)));
-    }).withNoCause();
-
-    assertThatExceptionOfType(MqttUnexpectedPacketException.class).isThrownBy(() -> {
-      ch.writeInbound(new MqttUnsubAckMessage(UNSUBACK_HEADER,
-          MqttMessageIdVariableHeader.from(1)));
-    }).withNoCause();
-
-    assertThatCode(() -> {
-      ch.writeInbound(new MqttMessage(PUBREL_HEADER, MqttMessageIdVariableHeader.from(1)));
-      MqttMessage message = ch.readOutbound();
-      assertEquals(MqttMessageType.PUBCOMP, message.fixedHeader().messageType());
-      assertEquals(1, ((MqttMessageIdVariableHeader) message.variableHeader()).messageId());
-    }).doesNotThrowAnyException();
   }
 
   @Test
