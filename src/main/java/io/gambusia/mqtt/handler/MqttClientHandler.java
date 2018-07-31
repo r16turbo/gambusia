@@ -463,7 +463,7 @@ public class MqttClientHandler extends ChannelDuplexHandler {
           pingRespRead(ctx, message);
           break;
         default:
-          ctx.fireChannelRead(msg);
+          unexpectedPacketHandler.unsupported(ctx, message);
           break;
       }
     } else {

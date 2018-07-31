@@ -308,6 +308,59 @@ class MqttClientHandlerTest {
   }
 
   @Nested
+  class ClientUnsupportedMessageReceivedTest extends TestBase {
+
+    @BeforeEach
+    void setUp() throws Exception {
+      ch = new EmbeddedChannel(
+          new MqttClientHandler(subscriber, new MqttPacketId(), new MqttUnexpectedPacketHandler()),
+          new LoggingHandler());
+      client.set(ch);
+    }
+
+    @Test
+    void connect() {
+      assertThatExceptionOfType(MqttUnexpectedPacketException.class).isThrownBy(() -> {
+        ch.writeInbound(new MqttMessage(MqttFixedHeaders.CONNECT_HEADER));
+      }).withNoCause().withMessage("Unexpected packet: type=CONNECT");
+      assertFalse(ch.isActive());
+    }
+
+    @Test
+    void subscribe() {
+      assertThatExceptionOfType(MqttUnexpectedPacketException.class).isThrownBy(() -> {
+        ch.writeInbound(new MqttMessage(MqttFixedHeaders.SUBSCRIBE_HEADER));
+      }).withNoCause().withMessage("Unexpected packet: type=SUBSCRIBE");
+      assertFalse(ch.isActive());
+    }
+
+    @Test
+    void unsubscribe() {
+      assertThatExceptionOfType(MqttUnexpectedPacketException.class).isThrownBy(() -> {
+        ch.writeInbound(new MqttMessage(MqttFixedHeaders.UNSUBSCRIBE_HEADER));
+      }).withNoCause().withMessage("Unexpected packet: type=UNSUBSCRIBE");
+      assertFalse(ch.isActive());
+    }
+
+    @Test
+    void ping() {
+      assertThatExceptionOfType(MqttUnexpectedPacketException.class).isThrownBy(() -> {
+        ch.writeInbound(new MqttMessage(MqttFixedHeaders.PINGREQ_HEADER));
+      }).withNoCause().withMessage("Unexpected packet: type=PINGREQ");
+      MqttMessage message = ch.readOutbound();
+      assertEquals(MqttMessageType.PINGRESP, message.fixedHeader().messageType());
+    }
+
+    @Test
+    void disconnect() {
+      assertThatExceptionOfType(MqttUnexpectedPacketException.class).isThrownBy(() -> {
+        ch.writeInbound(new MqttMessage(MqttFixedHeaders.DISCONNECT_HEADER));
+      }).withNoCause().withMessage("Unexpected packet: type=DISCONNECT");
+      assertFalse(ch.isActive());
+    }
+  }
+
+  @Nested
   class MqttOtherExceptionsTest extends TestBase {
 
     @BeforeEach
@@ -531,7 +584,6 @@ class MqttClientHandlerTest {
       assertTrue(ch.writeAndFlush("Hello World").sync().isSuccess());
       assertTrue(ch.writeAndFlush(new MqttMessage(DISCONNECT_HEADER)).sync().isSuccess());
       assertTrue(ch.writeInbound("Hello World"));
-      assertTrue(ch.writeInbound(new MqttMessage(DISCONNECT_HEADER)));
     }
   }
 

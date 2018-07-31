@@ -16,6 +16,7 @@
 
 package io.gambusia.mqtt.handler;
 
+import static io.gambusia.mqtt.handler.MqttFixedHeaders.PINGRESP_HEADER;
 import static io.gambusia.mqtt.handler.MqttFixedHeaders.PUBCOMP_HEADER;
 
 import io.netty.channel.ChannelHandlerContext;
@@ -64,5 +65,15 @@ public class MqttUnexpectedPacketHandler {
   public void unsubAck(ChannelHandlerContext ctx, int packetId, Throwable cause) throws Exception {
     ctx.fireExceptionCaught(
         new MqttUnexpectedPacketException(MqttMessageType.UNSUBACK, packetId, cause));
+  }
+
+  public void unsupported(ChannelHandlerContext ctx, MqttMessage msg) throws Exception {
+    final MqttMessageType type = msg.fixedHeader().messageType();
+    ctx.fireExceptionCaught(new MqttUnexpectedPacketException(type));
+    if (type == MqttMessageType.PINGREQ) {
+      ctx.channel().writeAndFlush(new MqttMessage(PINGRESP_HEADER));
+    } else {
+      ctx.close();
+    }
   }
 }
