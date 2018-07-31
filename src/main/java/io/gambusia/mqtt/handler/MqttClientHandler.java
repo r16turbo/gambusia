@@ -167,16 +167,15 @@ public class MqttClientHandler extends ChannelDuplexHandler {
   @Override
   public void channelInactive(ChannelHandlerContext ctx) throws Exception {
     stopKeepAlive();
-    { // mark a promises as failure.
-      PromiseBreaker breaker = new PromiseBreaker(new ClosedChannelException());
-      breaker.accept(connectPromise.getAndSet(null));
-      publishPromises.values().forEach(breaker);
-      releasePromises.values().forEach(breaker);
-      receivePromises.values().forEach(breaker);
-      subscribePromises.values().forEach(breaker);
-      unsubscribePromises.values().forEach(breaker);
-      pingPromises.forEach(breaker);
-    }
+    // mark a promises as failure.
+    new PromiseBreaker(new ClosedChannelException())
+        .renege(connectPromise.getAndSet(null))
+        .renege(publishPromises.values())
+        .renege(releasePromises.values())
+        .renege(receivePromises.values())
+        .renege(subscribePromises.values())
+        .renege(unsubscribePromises.values())
+        .renege(pingPromises);
     ctx.fireChannelInactive();
   }
 

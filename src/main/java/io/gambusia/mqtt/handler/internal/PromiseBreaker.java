@@ -17,9 +17,8 @@
 package io.gambusia.mqtt.handler.internal;
 
 import io.netty.util.concurrent.Promise;
-import java.util.function.Consumer;
 
-public class PromiseBreaker implements Consumer<Promise<?>> {
+public class PromiseBreaker {
 
   private final Throwable cause;
 
@@ -27,10 +26,17 @@ public class PromiseBreaker implements Consumer<Promise<?>> {
     this.cause = cause;
   }
 
-  @Override
-  public void accept(Promise<?> promise) {
+  public <P extends Promise<?>> PromiseBreaker renege(P promise) {
     if (promise != null) {
       promise.tryFailure(cause);
     }
+    return this;
+  }
+
+  public <P extends Promise<?>> PromiseBreaker renege(Iterable<P> promises) {
+    for (P promise : promises) {
+      renege(promise);
+    }
+    return this;
   }
 }
