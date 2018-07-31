@@ -23,6 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 
 import io.netty.handler.codec.mqtt.MqttMessageType;
 import io.netty.handler.codec.mqtt.MqttQoS;
+import java.util.NoSuchElementException;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
@@ -82,19 +83,45 @@ class ExceptionsTest {
 
   @Test
   void testMqttUnexpectedPacketException() {
+    final Throwable cause = new NoSuchElementException();
     MqttUnexpectedPacketException e;
+    assertThat(e = new MqttUnexpectedPacketException(MqttMessageType.CONNACK))
+        .hasMessage("Unexpected packet: type=CONNACK").hasNoCause();
+    assertEquals(MqttMessageType.CONNACK, e.messageType());
+    assertEquals(0, e.packetId());
+
+    assertThat(e = new MqttUnexpectedPacketException(MqttMessageType.CONNACK, cause))
+        .hasMessage("Unexpected packet: type=CONNACK").hasCause(cause);
+    assertEquals(MqttMessageType.CONNACK, e.messageType());
+    assertEquals(0, e.packetId());
+
     assertThat(e = new MqttUnexpectedPacketException(MqttMessageType.PUBACK, 1))
-        .hasNoCause().hasMessage("Unexpected packet: type=PUBACK, packetId=1");
+        .hasMessage("Unexpected packet: type=PUBACK, packetId=1").hasNoCause();
+    assertEquals(MqttMessageType.PUBACK, e.messageType());
+    assertEquals(1, e.packetId());
+
+    assertThat(e = new MqttUnexpectedPacketException(MqttMessageType.PUBACK, 1, cause))
+        .hasMessage("Unexpected packet: type=PUBACK, packetId=1").hasCause(cause);
     assertEquals(MqttMessageType.PUBACK, e.messageType());
     assertEquals(1, e.packetId());
 
     assertThat(e = new MqttUnexpectedPacketException(MqttMessageType.SUBACK, 2))
-        .hasNoCause().hasMessage("Unexpected packet: type=SUBACK, packetId=2");
+        .hasMessage("Unexpected packet: type=SUBACK, packetId=2").hasNoCause();
+    assertEquals(MqttMessageType.SUBACK, e.messageType());
+    assertEquals(2, e.packetId());
+
+    assertThat(e = new MqttUnexpectedPacketException(MqttMessageType.SUBACK, 2, cause))
+        .hasMessage("Unexpected packet: type=SUBACK, packetId=2").hasCause(cause);
     assertEquals(MqttMessageType.SUBACK, e.messageType());
     assertEquals(2, e.packetId());
 
     assertThat(e = new MqttUnexpectedPacketException(MqttMessageType.UNSUBACK, 3))
-        .hasNoCause().hasMessage("Unexpected packet: type=UNSUBACK, packetId=3");
+        .hasMessage("Unexpected packet: type=UNSUBACK, packetId=3").hasNoCause();
+    assertEquals(MqttMessageType.UNSUBACK, e.messageType());
+    assertEquals(3, e.packetId());
+
+    assertThat(e = new MqttUnexpectedPacketException(MqttMessageType.UNSUBACK, 3, cause))
+        .hasMessage("Unexpected packet: type=UNSUBACK, packetId=3").hasCause(cause);
     assertEquals(MqttMessageType.UNSUBACK, e.messageType());
     assertEquals(3, e.packetId());
   }
@@ -103,9 +130,9 @@ class ExceptionsTest {
   void testMqttQoSException() {
     MqttUnexpectedQoSException e;
 
-    assertThat(e = new MqttUnexpectedQoSException(MqttMessageType.PUBACK, 1, null))
-        .hasNoCause().hasMessage("Unexpected packet: type=PUBACK, packetId=1, qos=null");
-    assertEquals(MqttMessageType.PUBACK, e.messageType());
+    assertThat(e = new MqttUnexpectedQoSException(MqttMessageType.PUBLISH, 1, null))
+        .hasNoCause().hasMessage("Unexpected packet: type=PUBLISH, packetId=1, qos=null");
+    assertEquals(MqttMessageType.PUBLISH, e.messageType());
     assertEquals(1, e.packetId());
     assertNull(e.qos());
 
