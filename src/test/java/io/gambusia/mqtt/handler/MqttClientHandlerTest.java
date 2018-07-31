@@ -360,7 +360,7 @@ class MqttClientHandlerTest {
   }
 
   @Test
-  void testMqttDuplicateIdException() throws InterruptedException {
+  void testMqttDuplicatePacketException() throws InterruptedException {
     assertThatCode(() -> {
       Future<?> future = client.connect(true, 60, 60, "test");
       ch.writeInbound(MqttMessageBuilders.connAck()
@@ -380,29 +380,29 @@ class MqttClientHandlerTest {
       }
     }).doesNotThrowAnyException();
 
-    assertThatExceptionOfType(MqttDuplicateIdException.class).isThrownBy(() -> {
+    assertThatExceptionOfType(MqttDuplicatePacketException.class).isThrownBy(() -> {
       client.publish1(false, "test", Unpooled.EMPTY_BUFFER, 0, TimeUnit.SECONDS).sync();
     }).withNoCause().withMessage("Duplicate packet: type=PUBLISH, packetId=1");
 
-    assertThatExceptionOfType(MqttDuplicateIdException.class).isThrownBy(() -> {
+    assertThatExceptionOfType(MqttDuplicatePacketException.class).isThrownBy(() -> {
       client.received(1, 0, TimeUnit.SECONDS).sync();
     }).withNoCause().withMessage("Duplicate packet: type=PUBREC, packetId=1");
 
-    assertThatExceptionOfType(MqttDuplicateIdException.class).isThrownBy(() -> {
+    assertThatExceptionOfType(MqttDuplicatePacketException.class).isThrownBy(() -> {
       client.release(1, 0, TimeUnit.SECONDS).sync();
     }).withNoCause().withMessage("Duplicate packet: type=PUBREL, packetId=1");
 
-    assertThatExceptionOfType(MqttDuplicateIdException.class).isThrownBy(() -> {
+    assertThatExceptionOfType(MqttDuplicatePacketException.class).isThrownBy(() -> {
       client.subscribe(0, TimeUnit.SECONDS, MqttSubscription.qos0("test")).sync();
     }).withNoCause().withMessage("Duplicate packet: type=SUBSCRIBE, packetId=1");
 
-    assertThatExceptionOfType(MqttDuplicateIdException.class).isThrownBy(() -> {
+    assertThatExceptionOfType(MqttDuplicatePacketException.class).isThrownBy(() -> {
       client.unsubscribe(0, TimeUnit.SECONDS, "test").sync();
     }).withNoCause().withMessage("Duplicate packet: type=UNSUBSCRIBE, packetId=1");
   }
 
   @Test
-  void testMqttUnexpectedIdException() throws InterruptedException {
+  void testMqttUnexpectedPacketException() throws InterruptedException {
     assertThatCode(() -> {
       Future<?> future = client.connect(true, 60, 60, "test");
       ch.writeInbound(MqttMessageBuilders.connAck()
@@ -412,24 +412,24 @@ class MqttClientHandlerTest {
       assertEquals(MqttMessageType.CONNECT, message.fixedHeader().messageType());
     }).doesNotThrowAnyException();
 
-    assertThatExceptionOfType(MqttUnexpectedIdException.class).isThrownBy(() -> {
+    assertThatExceptionOfType(MqttUnexpectedPacketException.class).isThrownBy(() -> {
       ch.writeInbound(new MqttMessage(PUBACK_HEADER, MqttMessageIdVariableHeader.from(1)));
     }).withNoCause();
 
-    assertThatExceptionOfType(MqttUnexpectedIdException.class).isThrownBy(() -> {
+    assertThatExceptionOfType(MqttUnexpectedPacketException.class).isThrownBy(() -> {
       ch.writeInbound(new MqttMessage(PUBREC_HEADER, MqttMessageIdVariableHeader.from(1)));
     }).withNoCause();
 
-    assertThatExceptionOfType(MqttUnexpectedIdException.class).isThrownBy(() -> {
+    assertThatExceptionOfType(MqttUnexpectedPacketException.class).isThrownBy(() -> {
       ch.writeInbound(new MqttMessage(PUBCOMP_HEADER, MqttMessageIdVariableHeader.from(1)));
     }).withNoCause();
 
-    assertThatExceptionOfType(MqttUnexpectedIdException.class).isThrownBy(() -> {
+    assertThatExceptionOfType(MqttUnexpectedPacketException.class).isThrownBy(() -> {
       ch.writeInbound(new MqttSubAckMessage(SUBACK_HEADER,
           MqttMessageIdVariableHeader.from(1), new MqttSubAckPayload(1)));
     }).withNoCause();
 
-    assertThatExceptionOfType(MqttUnexpectedIdException.class).isThrownBy(() -> {
+    assertThatExceptionOfType(MqttUnexpectedPacketException.class).isThrownBy(() -> {
       ch.writeInbound(new MqttUnsubAckMessage(UNSUBACK_HEADER,
           MqttMessageIdVariableHeader.from(1)));
     }).withNoCause();

@@ -278,7 +278,7 @@ public class MqttClientHandler extends ChannelDuplexHandler {
             msg.packetId(packetId);
           }
           if (null != publishPromises.putIfAbsent(packetId, msg)) {
-            msg.setFailure(new MqttDuplicateIdException(MqttMessageType.PUBLISH, packetId));
+            msg.setFailure(new MqttDuplicatePacketException(MqttMessageType.PUBLISH, packetId));
             return;
           }
           // QoS 1,2
@@ -319,7 +319,7 @@ public class MqttClientHandler extends ChannelDuplexHandler {
     } else {
       final int packetId = msg.packetId();
       if (null != receivePromises.putIfAbsent(packetId, msg)) {
-        msg.setFailure(new MqttDuplicateIdException(MqttMessageType.PUBREC, packetId));
+        msg.setFailure(new MqttDuplicatePacketException(MqttMessageType.PUBREC, packetId));
       } else {
         final Promise<Void> promise = setTimer(msg);
         final MqttMessage message;
@@ -341,7 +341,7 @@ public class MqttClientHandler extends ChannelDuplexHandler {
     } else {
       final int packetId = msg.packetId();
       if (null != releasePromises.putIfAbsent(packetId, msg)) {
-        msg.setFailure(new MqttDuplicateIdException(MqttMessageType.PUBREL, packetId));
+        msg.setFailure(new MqttDuplicatePacketException(MqttMessageType.PUBREL, packetId));
       } else {
         final Promise<Void> promise = setTimer(msg);
         final MqttMessage message;
@@ -363,7 +363,7 @@ public class MqttClientHandler extends ChannelDuplexHandler {
     } else {
       final int packetId = subscribeId.getAndIncrement();
       if (null != subscribePromises.putIfAbsent(packetId, msg)) {
-        msg.setFailure(new MqttDuplicateIdException(MqttMessageType.SUBSCRIBE, packetId));
+        msg.setFailure(new MqttDuplicatePacketException(MqttMessageType.SUBSCRIBE, packetId));
       } else {
         final Promise<MqttQoS[]> promise = setTimer(msg);
         final MqttSubscribeMessage message;
@@ -394,7 +394,7 @@ public class MqttClientHandler extends ChannelDuplexHandler {
     } else {
       final int packetId = unsubscribeId.getAndIncrement();
       if (null != unsubscribePromises.putIfAbsent(packetId, msg)) {
-        msg.setFailure(new MqttDuplicateIdException(MqttMessageType.UNSUBSCRIBE, packetId));
+        msg.setFailure(new MqttDuplicatePacketException(MqttMessageType.UNSUBSCRIBE, packetId));
       } else {
         final Promise<Void> promise = setTimer(msg);
         final MqttUnsubscribeMessage message;

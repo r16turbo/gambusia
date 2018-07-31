@@ -62,38 +62,38 @@ class ExceptionsTest {
   }
 
   @Test
-  void testMqttDuplicateIdException() {
-    MqttDuplicateIdException e;
-    assertThat(e = new MqttDuplicateIdException(MqttMessageType.PUBLISH, 1))
+  void testMqttDuplicatePacketException() {
+    MqttDuplicatePacketException e;
+    assertThat(e = new MqttDuplicatePacketException(MqttMessageType.PUBLISH, 1))
         .hasNoCause().hasMessage("Duplicate packet: type=PUBLISH, packetId=1");
     assertEquals(MqttMessageType.PUBLISH, e.messageType());
     assertEquals(1, e.packetId());
 
-    assertThat(e = new MqttDuplicateIdException(MqttMessageType.SUBSCRIBE, 2))
+    assertThat(e = new MqttDuplicatePacketException(MqttMessageType.SUBSCRIBE, 2))
         .hasNoCause().hasMessage("Duplicate packet: type=SUBSCRIBE, packetId=2");
     assertEquals(MqttMessageType.SUBSCRIBE, e.messageType());
     assertEquals(2, e.packetId());
 
-    assertThat(e = new MqttDuplicateIdException(MqttMessageType.UNSUBSCRIBE, 3))
+    assertThat(e = new MqttDuplicatePacketException(MqttMessageType.UNSUBSCRIBE, 3))
         .hasNoCause().hasMessage("Duplicate packet: type=UNSUBSCRIBE, packetId=3");
     assertEquals(MqttMessageType.UNSUBSCRIBE, e.messageType());
     assertEquals(3, e.packetId());
   }
 
   @Test
-  void testMqttUnexpectedIdException() {
-    MqttUnexpectedIdException e;
-    assertThat(e = new MqttUnexpectedIdException(MqttMessageType.PUBACK, 1))
+  void testMqttUnexpectedPacketException() {
+    MqttUnexpectedPacketException e;
+    assertThat(e = new MqttUnexpectedPacketException(MqttMessageType.PUBACK, 1))
         .hasNoCause().hasMessage("Unexpected packet: type=PUBACK, packetId=1");
     assertEquals(MqttMessageType.PUBACK, e.messageType());
     assertEquals(1, e.packetId());
 
-    assertThat(e = new MqttUnexpectedIdException(MqttMessageType.SUBACK, 2))
+    assertThat(e = new MqttUnexpectedPacketException(MqttMessageType.SUBACK, 2))
         .hasNoCause().hasMessage("Unexpected packet: type=SUBACK, packetId=2");
     assertEquals(MqttMessageType.SUBACK, e.messageType());
     assertEquals(2, e.packetId());
 
-    assertThat(e = new MqttUnexpectedIdException(MqttMessageType.UNSUBACK, 3))
+    assertThat(e = new MqttUnexpectedPacketException(MqttMessageType.UNSUBACK, 3))
         .hasNoCause().hasMessage("Unexpected packet: type=UNSUBACK, packetId=3");
     assertEquals(MqttMessageType.UNSUBACK, e.messageType());
     assertEquals(3, e.packetId());

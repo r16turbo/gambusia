@@ -18,12 +18,12 @@ package io.gambusia.mqtt.handler;
 
 import io.netty.handler.codec.mqtt.MqttMessageType;
 
-public class MqttUnexpectedIdException extends MqttPacketException {
+public class MqttDuplicatePacketException extends MqttPacketException {
 
-  private static final long serialVersionUID = -512952074056123171L;
+  private static final long serialVersionUID = -5651519169441099046L;
 
-  public MqttUnexpectedIdException(MqttMessageType messageType, int packetId) {
-    super("Unexpected packet: type=" + messageType + ", packetId=" + packetId,
+  public MqttDuplicatePacketException(MqttMessageType messageType, int packetId) {
+    super("Duplicate packet: type=" + messageType + ", packetId=" + packetId,
         messageType, packetId);
   }
 }
