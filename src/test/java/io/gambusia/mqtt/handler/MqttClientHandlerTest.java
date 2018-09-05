@@ -36,6 +36,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.gambusia.mqtt.MqttArticle;
 import io.gambusia.mqtt.MqttAsyncClient;
+import io.gambusia.mqtt.MqttSubscribeFuture;
 import io.gambusia.mqtt.MqttSubscriber;
 import io.gambusia.mqtt.MqttSubscription;
 import io.gambusia.mqtt.handler.promise.MqttConnectPromise;
@@ -100,8 +101,9 @@ class MqttClientHandlerTest {
 
     @BeforeEach
     void setUp() throws Exception {
-      ch = new EmbeddedChannel(new MqttClientHandler(subscriber), new LoggingHandler());
-      client.set(ch);
+      client.set(ch = new EmbeddedChannel(
+          new MqttClientHandler(subscriber),
+          new LoggingHandler()));
     }
 
     @Test
@@ -173,8 +175,9 @@ class MqttClientHandlerTest {
 
     @BeforeEach
     void setUp() throws Exception {
-      ch = new EmbeddedChannel(new MqttClientHandler(subscriber), new LoggingHandler());
-      client.set(ch);
+      client.set(ch = new EmbeddedChannel(
+          new MqttClientHandler(subscriber),
+          new LoggingHandler()));
     }
 
     @Test
@@ -312,10 +315,9 @@ class MqttClientHandlerTest {
 
     @BeforeEach
     void setUp() throws Exception {
-      ch = new EmbeddedChannel(
+      client.set(ch = new EmbeddedChannel(
           new MqttClientHandler(subscriber, new MqttPacketId(), new MqttUnexpectedPacketHandler()),
-          new LoggingHandler());
-      client.set(ch);
+          new LoggingHandler()));
     }
 
     @Test
@@ -361,14 +363,92 @@ class MqttClientHandlerTest {
   }
 
   @Nested
+  class MqttSubscribeFutureTest extends TestBase {
+
+    @BeforeEach
+    void setUp() throws Exception {
+      client.set(ch = new EmbeddedChannel(new MqttClientHandler(subscriber), new LoggingHandler()));
+
+      assertThatCode(() -> {
+        Future<?> future = client.connect(true, 60, 60, "test");
+        ch.writeInbound(MqttMessageBuilders.connAck()
+            .returnCode(MqttConnectReturnCode.CONNECTION_ACCEPTED).build());
+        assertTrue(future.sync().isSuccess());
+        MqttMessage message = ch.readOutbound();
+        assertEquals(MqttMessageType.CONNECT, message.fixedHeader().messageType());
+      }).doesNotThrowAnyException();
+    }
+
+    @Test
+    void hasNotAllResults() {
+      MqttSubscribeFuture future = client.subscribe(
+          MqttSubscription.qos2("test/+/2"),
+          MqttSubscription.qos1("test/+/1"),
+          MqttSubscription.qos0("test/+/0"));
+      assertFalse(future.hasAllResults());
+      ch.writeInbound(new MqttSubAckMessage(SUBACK_HEADER,
+          MqttMessageIdVariableHeader.from(1),
+          new MqttSubAckPayload()));
+      assertFalse(future.hasAllResults());
+      assertTrue(future.hasDowngraded());
+      assertTrue(future.hasFailed());
+    }
+
+    @Test
+    void hasNotDowngrade() {
+      MqttSubscribeFuture future = client.subscribe(
+          MqttSubscription.qos2("test/+/2"),
+          MqttSubscription.qos1("test/+/1"),
+          MqttSubscription.qos0("test/+/0"));
+      assertFalse(future.hasAllResults());
+      ch.writeInbound(new MqttSubAckMessage(SUBACK_HEADER,
+          MqttMessageIdVariableHeader.from(1),
+          new MqttSubAckPayload(0x02, 0x01, 0x00)));
+      assertTrue(future.hasAllResults());
+      assertFalse(future.hasDowngraded());
+      assertFalse(future.hasFailed());
+    }
+
+    @Test
+    void hasDowngrade() {
+      MqttSubscribeFuture future = client.subscribe(
+          MqttSubscription.qos2("test/+/2"),
+          MqttSubscription.qos1("test/+/1"),
+          MqttSubscription.qos0("test/+/0"));
+      assertFalse(future.hasAllResults());
+      ch.writeInbound(new MqttSubAckMessage(SUBACK_HEADER,
+          MqttMessageIdVariableHeader.from(1),
+          new MqttSubAckPayload(0x02, 0x00, 0x00)));
+      assertTrue(future.hasAllResults());
+      assertTrue(future.hasDowngraded());
+      assertFalse(future.hasFailed());
+    }
+
+    @Test
+    void hasFailure() {
+      MqttSubscribeFuture future = client.subscribe(
+          MqttSubscription.qos2("test/+/2"),
+          MqttSubscription.qos1("test/+/1"),
+          MqttSubscription.qos0("test/+/0"));
+      assertFalse(future.hasAllResults());
+      ch.writeInbound(new MqttSubAckMessage(SUBACK_HEADER,
+          MqttMessageIdVariableHeader.from(1),
+          new MqttSubAckPayload(0x02, 0x80, 0x00)));
+      assertTrue(future.hasAllResults());
+      assertTrue(future.hasDowngraded());
+      assertTrue(future.hasFailed());
+    }
+  }
+
+  @Nested
   class MqttOtherExceptionsTest extends TestBase {
 
     @BeforeEach
     void setUp() throws Exception {
-      ch = new EmbeddedChannel(
-          new MqttClientHandler(subscriber, new MqttPacketId(), new MqttUnexpectedPacketHandler()),
-          new LoggingHandler());
-      client.set(ch);
+      client.set(ch = new EmbeddedChannel(
+          new MqttClientHandler(subscriber, new MqttPacketId(),
+              new MqttUnexpectedPacketHandler()),
+          new LoggingHandler()));
     }
 
     @Test
@@ -445,9 +525,9 @@ class MqttClientHandlerTest {
 
     @BeforeEach
     void setUp() throws Exception {
-      timer = new HashedWheelTimer();
-      ch = new EmbeddedChannel(new MqttClientHandler(subscriber, timer), new LoggingHandler());
-      client.set(ch);
+      client.set(ch = new EmbeddedChannel(
+          new MqttClientHandler(subscriber, timer = new HashedWheelTimer()),
+          new LoggingHandler()));
     }
 
     @Override
@@ -523,8 +603,9 @@ class MqttClientHandlerTest {
 
       assertThatExceptionOfType(TimeoutException.class).isThrownBy(() -> {
         CountDownLatch latch = new CountDownLatch(1);
-        Future<?> future = client.subscribe(1, TimeUnit.NANOSECONDS, MqttSubscription.qos0("test"))
-            .addListener(f -> latch.countDown());
+        Future<?> future =
+            client.subscribe(1, TimeUnit.NANOSECONDS, MqttSubscription.qos0("test"))
+                .addListener(f -> latch.countDown());
         assertTrue(latch.await(1, TimeUnit.SECONDS));
         assertFalse(future.sync().isSuccess());
       }).withNoCause();
@@ -574,8 +655,9 @@ class MqttClientHandlerTest {
 
     @BeforeEach
     void setUp() throws Exception {
-      ch = new EmbeddedChannel(new MqttClientHandler(subscriber), new LoggingHandler());
-      client.set(ch);
+      client.set(ch = new EmbeddedChannel(
+          new MqttClientHandler(subscriber),
+          new LoggingHandler()));
     }
 
     @Test

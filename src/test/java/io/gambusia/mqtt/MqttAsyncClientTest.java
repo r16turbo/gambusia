@@ -239,18 +239,12 @@ class MqttAsyncClientTest {
 
     @Test
     void testSubscribeSuccess() throws InterruptedException {
-      Future<MqttQoS[]> future = client.subscribe(
+      MqttSubscribeFuture future = client.subscribe(
           MqttSubscription.qos2("test/+/2"),
           MqttSubscription.qos1("test/+/1"),
           MqttSubscription.qos0("test/+/0"));
       assertTrue(future.sync().isSuccess());
-
-      MqttQoS[] results = future.getNow();
-      assertNotNull(results);
-      assertEquals(3, results.length);
-      assertEquals(2, results[0].value());
-      assertEquals(1, results[1].value());
-      assertEquals(0, results[2].value());
+      assertFalse(future.hasDowngraded());
     }
 
     @Test

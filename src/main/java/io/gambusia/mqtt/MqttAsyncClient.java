@@ -232,11 +232,11 @@ public class MqttAsyncClient {
   }
 
   // subscribe
-  public Future<MqttQoS[]> subscribe(MqttSubscription... subscriptions) {
+  public MqttSubscribeFuture subscribe(MqttSubscription... subscriptions) {
     return writeAndFlush(new MqttSubscribePromise(eventLoop(), timeout, unit, subscriptions));
   }
 
-  public Future<MqttQoS[]> subscribe(long timeout, TimeUnit unit,
+  public MqttSubscribeFuture subscribe(long timeout, TimeUnit unit,
       MqttSubscription... subscriptions) {
     return writeAndFlush(new MqttSubscribePromise(eventLoop(), timeout, unit, subscriptions));
   }

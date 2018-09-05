@@ -18,6 +18,7 @@ package io.gambusia.mqtt.handler.promise;
 
 import static io.gambusia.netty.util.Args.requireNonContainsNull;
 
+import io.gambusia.mqtt.MqttSubscribeFuture;
 import io.gambusia.mqtt.MqttSubscription;
 import io.netty.handler.codec.mqtt.MqttMessageType;
 import io.netty.handler.codec.mqtt.MqttQoS;
@@ -29,7 +30,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-public class MqttSubscribePromise extends MqttPromise<MqttQoS[]> {
+public class MqttSubscribePromise extends MqttPromise<MqttQoS[]> implements MqttSubscribeFuture {
 
   private final List<MqttSubscription> subscriptions;
 
@@ -45,8 +46,43 @@ public class MqttSubscribePromise extends MqttPromise<MqttQoS[]> {
     return MqttMessageType.SUBSCRIBE;
   }
 
+  @Override
   public List<MqttSubscription> subscriptions() {
     return subscriptions;
+  }
+
+  @Override
+  public boolean hasAllResults() {
+    return isSuccess() && subscriptions().size() == getNow().length;
+  }
+
+  @Override
+  public boolean hasDowngraded() {
+    if (!hasAllResults()) {
+      return true;
+    }
+    final List<MqttSubscription> request = subscriptions();
+    final int size = request.size();
+    final MqttQoS[] results = getNow();
+    for (int index = 0; index < size; index++) {
+      if ((byte) request.get(index).qos().value() > (byte) results[index].value()) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  @Override
+  public boolean hasFailed() {
+    if (!hasAllResults()) {
+      return true;
+    }
+    for (MqttQoS qos : getNow()) {
+      if (qos == MqttQoS.FAILURE) {
+        return true;
+      }
+    }
+    return false;
   }
 
   @Override
