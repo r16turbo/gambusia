@@ -21,42 +21,42 @@ public final class Args {
 
   public static int requirePositive(int i, String name) {
     if (i <= 0) {
-      throw new IllegalArgumentException(String.format("%s: %d (expected: > 0)", name, i));
+      throw new IllegalArgumentException(name + ": " + i + " (expected: > 0)");
     }
     return i;
   }
 
   public static long requirePositive(long i, String name) {
     if (i <= 0) {
-      throw new IllegalArgumentException(String.format("%s: %d (expected: > 0)", name, i));
+      throw new IllegalArgumentException(name + ": " + i + " (expected: > 0)");
     }
     return i;
   }
 
   public static int requireNonNegative(int i, String name) {
     if (i < 0) {
-      throw new IllegalArgumentException(String.format("%s: %d (expected: >= 0)", name, i));
+      throw new IllegalArgumentException(name + ": " + i + " (expected: >= 0)");
     }
     return i;
   }
 
   public static long requireNonNegative(long i, String name) {
     if (i < 0) {
-      throw new IllegalArgumentException(String.format("%s: %d (expected: >= 0)", name, i));
+      throw new IllegalArgumentException(name + ": " + i + " (expected: >= 0)");
     }
     return i;
   }
 
   public static int requireUnsignedShort(int i, String name) {
     if ((i & 0xFFFF0000) != 0) {
-      throw new IllegalArgumentException(String.format("%s: %d (expected: 0–65535)", name, i));
+      throw new IllegalArgumentException(name + ": " + i + " (expected: 0–65535)");
     }
     return i;
   }
 
   public static long requireUnsignedInt(long i, String name) {
     if ((i & 0xFFFFFFFF00000000L) != 0) {
-      throw new IllegalArgumentException(String.format("%s: %d (expected: 0–4294967295)", name, i));
+      throw new IllegalArgumentException(name + ": " + i + " (expected: 0–4294967295)");
     }
     return i;
   }
@@ -70,14 +70,14 @@ public final class Args {
 
   public static String requireNonEmpty(String arg, String name) {
     if (requireNonNull(arg, name).isEmpty()) {
-      throw new IllegalArgumentException(String.format("%s is empty", name));
+      throw new IllegalArgumentException(name + " is empty");
     }
     return arg;
   }
 
   public static <T> T[] requireNonEmpty(T[] array, String name) {
     if (requireNonNull(array, name).length <= 0) {
-      throw new IllegalArgumentException(String.format("%s is empty", name));
+      throw new IllegalArgumentException(name + " is empty");
     }
     return array;
   }
@@ -86,7 +86,7 @@ public final class Args {
     requireNonEmpty(array, name);
     for (int i = 0; i < array.length; i++) {
       if (array[i] == null) {
-        throw new NullPointerException(String.format("%s[%d]", name, i));
+        throw new NullPointerException(name + '[' + i + ']');
       }
     }
     return array;

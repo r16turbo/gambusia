@@ -60,7 +60,7 @@ public final class MqttPacketId implements Serializable {
 
   public static int requireValidPacketId(int id, String name) throws IllegalArgumentException {
     if (!isValidPacketId(id)) {
-      throw new IllegalArgumentException(String.format("%s: %d (expected: 1–65535)", name, id));
+      throw new IllegalArgumentException(name + ": " + id + " (expected: 1–65535)");
     }
     return id;
   }
