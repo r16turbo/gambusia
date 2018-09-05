@@ -29,6 +29,8 @@ import io.gambusia.mqtt.MqttConnectResult;
 import io.gambusia.mqtt.MqttPublication;
 import io.gambusia.mqtt.MqttSubscriber;
 import io.gambusia.mqtt.MqttSubscription;
+import io.gambusia.mqtt.handler.internal.Hash;
+import io.gambusia.mqtt.handler.internal.Hash.MutableHash;
 import io.gambusia.mqtt.handler.internal.PromiseBreaker;
 import io.gambusia.mqtt.handler.internal.PromiseQueueRemover;
 import io.gambusia.mqtt.handler.internal.PromiseRemover;
@@ -108,11 +110,12 @@ public class MqttClientHandler extends ChannelDuplexHandler {
 
   private boolean connected = false;
   private final AtomicReference<MqttConnectPromise> connectPromise;
-  private final ConcurrentMap<Integer, MqttPublishPromise> publishPromises;
-  private final ConcurrentMap<Integer, Promise<Void>> releasePromises;
-  private final ConcurrentMap<Integer, Promise<Void>> receivePromises;
-  private final ConcurrentMap<Integer, Promise<MqttQoS[]>> subscribePromises;
-  private final ConcurrentMap<Integer, Promise<Void>> unsubscribePromises;
+  private final MutableHash hash = new MutableHash(); // temporarily shared object
+  private final ConcurrentMap<Hash, MqttPublishPromise> publishPromises;
+  private final ConcurrentMap<Hash, Promise<Void>> releasePromises;
+  private final ConcurrentMap<Hash, Promise<Void>> receivePromises;
+  private final ConcurrentMap<Hash, Promise<MqttQoS[]>> subscribePromises;
+  private final ConcurrentMap<Hash, Promise<Void>> unsubscribePromises;
   private final Queue<Promise<Void>> pingPromises;
 
   public MqttClientHandler(MqttSubscriber subscriber) {
@@ -278,7 +281,7 @@ public class MqttClientHandler extends ChannelDuplexHandler {
             packetId = publishId.getAndIncrement();
             msg.packetId(packetId);
           }
-          if (null != publishPromises.putIfAbsent(packetId, msg)) {
+          if (null != publishPromises.putIfAbsent(hash.set(packetId), msg)) {
             msg.setFailure(new MqttDuplicatePacketException(MqttMessageType.PUBLISH, packetId));
             return;
           }
@@ -319,7 +322,7 @@ public class MqttClientHandler extends ChannelDuplexHandler {
       msg.setFailure(new NotYetConnectedException());
     } else {
       final int packetId = msg.packetId();
-      if (null != receivePromises.putIfAbsent(packetId, msg)) {
+      if (null != receivePromises.putIfAbsent(hash.set(packetId), msg)) {
         msg.setFailure(new MqttDuplicatePacketException(MqttMessageType.PUBREC, packetId));
       } else {
         final Promise<Void> promise = setTimer(msg);
@@ -341,7 +344,7 @@ public class MqttClientHandler extends ChannelDuplexHandler {
       msg.setFailure(new NotYetConnectedException());
     } else {
       final int packetId = msg.packetId();
-      if (null != releasePromises.putIfAbsent(packetId, msg)) {
+      if (null != releasePromises.putIfAbsent(hash.set(packetId), msg)) {
         msg.setFailure(new MqttDuplicatePacketException(MqttMessageType.PUBREL, packetId));
       } else {
         final Promise<Void> promise = setTimer(msg);
@@ -363,7 +366,7 @@ public class MqttClientHandler extends ChannelDuplexHandler {
       msg.setFailure(new NotYetConnectedException());
     } else {
       final int packetId = subscribeId.getAndIncrement();
-      if (null != subscribePromises.putIfAbsent(packetId, msg)) {
+      if (null != subscribePromises.putIfAbsent(hash.set(packetId), msg)) {
         msg.setFailure(new MqttDuplicatePacketException(MqttMessageType.SUBSCRIBE, packetId));
       } else {
         final Promise<MqttQoS[]> promise = setTimer(msg);
@@ -394,7 +397,7 @@ public class MqttClientHandler extends ChannelDuplexHandler {
       msg.setFailure(new NotYetConnectedException());
     } else {
       final int packetId = unsubscribeId.getAndIncrement();
-      if (null != unsubscribePromises.putIfAbsent(packetId, msg)) {
+      if (null != unsubscribePromises.putIfAbsent(hash.set(packetId), msg)) {
         msg.setFailure(new MqttDuplicatePacketException(MqttMessageType.UNSUBSCRIBE, packetId));
       } else {
         final Promise<Void> promise = setTimer(msg);
@@ -509,7 +512,7 @@ public class MqttClientHandler extends ChannelDuplexHandler {
     if (!isConnected()) {
       unexpectedPacketHandler.pubAck(ctx, packetId, new NotYetConnectedException());
     } else {
-      final MqttPublishPromise promise = publishPromises.remove(packetId);
+      final MqttPublishPromise promise = publishPromises.remove(hash.set(packetId));
       if (promise == null) {
         unexpectedPacketHandler.pubAck(ctx, packetId, new NoSuchElementException("No promise"));
       } else {
@@ -529,7 +532,7 @@ public class MqttClientHandler extends ChannelDuplexHandler {
     if (!isConnected()) {
       unexpectedPacketHandler.pubRec(ctx, packetId, new NotYetConnectedException());
     } else {
-      final MqttPublishPromise promise = publishPromises.remove(packetId);
+      final MqttPublishPromise promise = publishPromises.remove(hash.set(packetId));
       if (promise == null) {
         unexpectedPacketHandler.pubRec(ctx, packetId, new NoSuchElementException("No promise"));
       } else {
@@ -549,7 +552,7 @@ public class MqttClientHandler extends ChannelDuplexHandler {
     if (!isConnected()) {
       unexpectedPacketHandler.pubRel(ctx, packetId, new NotYetConnectedException());
     } else {
-      final Promise<Void> promise = receivePromises.remove(packetId);
+      final Promise<Void> promise = receivePromises.remove(hash.set(packetId));
       if (promise == null) {
         unexpectedPacketHandler.pubRel(ctx, packetId, new NoSuchElementException("No promise"));
       } else {
@@ -563,7 +566,7 @@ public class MqttClientHandler extends ChannelDuplexHandler {
     if (!isConnected()) {
       unexpectedPacketHandler.pubComp(ctx, packetId, new NotYetConnectedException());
     } else {
-      final Promise<Void> promise = releasePromises.remove(packetId);
+      final Promise<Void> promise = releasePromises.remove(hash.set(packetId));
       if (promise == null) {
         unexpectedPacketHandler.pubComp(ctx, packetId, new NoSuchElementException("No promise"));
       } else {
@@ -578,7 +581,7 @@ public class MqttClientHandler extends ChannelDuplexHandler {
       unexpectedPacketHandler.subAck(ctx, packetId, new NotYetConnectedException());
     } else {
       final MqttSubAckPayload payload = msg.payload();
-      final Promise<MqttQoS[]> promise = subscribePromises.remove(packetId);
+      final Promise<MqttQoS[]> promise = subscribePromises.remove(hash.set(packetId));
       if (promise == null) {
         unexpectedPacketHandler.subAck(ctx, packetId, new NoSuchElementException("No promise"));
       } else {
@@ -597,7 +600,7 @@ public class MqttClientHandler extends ChannelDuplexHandler {
     if (!isConnected()) {
       unexpectedPacketHandler.unsubAck(ctx, packetId, new NotYetConnectedException());
     } else {
-      final Promise<Void> promise = unsubscribePromises.remove(packetId);
+      final Promise<Void> promise = unsubscribePromises.remove(hash.set(packetId));
       if (promise == null) {
         unexpectedPacketHandler.unsubAck(ctx, packetId, new NoSuchElementException("No promise"));
       } else {
