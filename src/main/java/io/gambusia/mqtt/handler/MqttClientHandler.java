@@ -85,7 +85,6 @@ import java.nio.channels.ConnectionPendingException;
 import java.nio.channels.NotYetConnectedException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.ListIterator;
 import java.util.NoSuchElementException;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
@@ -585,10 +584,11 @@ public class MqttClientHandler extends ChannelDuplexHandler {
       if (promise == null) {
         unexpectedPacketHandler.subAck(ctx, packetId, new NoSuchElementException("No promise"));
       } else {
-        MqttQoS[] qosLevels = new MqttQoS[payload.grantedQoSLevels().size()];
-        ListIterator<Integer> iterator = payload.grantedQoSLevels().listIterator();
-        while (iterator.hasNext()) {
-          qosLevels[iterator.nextIndex()] = MqttQoS.valueOf(iterator.next());
+        final List<Integer> results = payload.grantedQoSLevels();
+        final int size = results.size();
+        final MqttQoS[] qosLevels = new MqttQoS[size];
+        for (int index = 0; index < size; index++) {
+          qosLevels[index] = MqttQoS.valueOf(results.get(index).intValue());
         }
         promise.trySuccess(qosLevels);
       }
