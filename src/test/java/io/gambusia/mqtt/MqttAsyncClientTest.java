@@ -244,17 +244,19 @@ class MqttAsyncClientTest {
           MqttSubscription.qos1("test/+/1"),
           MqttSubscription.qos0("test/+/0"));
       assertTrue(future.sync().isSuccess());
-      assertFalse(future.hasDowngraded());
+      assertTrue(future.isCompleteSuccess());
     }
 
     @Test
     void testSubscribeFailure() {
       assertThatExceptionOfType(ClosedChannelException.class).isThrownBy(() -> {
-        assertFalse(client.subscribe(
+        MqttSubscribeFuture future = client.subscribe(
             MqttSubscription.qos2("test/#/2"),
             MqttSubscription.qos1("test/#/1"),
-            MqttSubscription.qos0("test/#/0"))
-            .sync().isSuccess());
+            MqttSubscription.qos0("test/#/0"));
+        assertFalse(future.await().isSuccess());
+        assertFalse(future.isAllSuccess());
+        assertFalse(future.sync().isSuccess());
       });
     }
 

@@ -24,9 +24,7 @@ public interface MqttSubscribeFuture extends Future<MqttQoS[]> {
 
   List<MqttSubscription> subscriptions();
 
-  boolean hasAllResults();
+  boolean isAllSuccess();
 
-  boolean hasDowngraded();
-
-  boolean hasFailed();
+  boolean isCompleteSuccess();
 }

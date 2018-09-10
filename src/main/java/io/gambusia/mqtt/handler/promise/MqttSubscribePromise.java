@@ -34,6 +34,9 @@ public class MqttSubscribePromise extends MqttPromise<MqttQoS[]> implements Mqtt
 
   private final List<MqttSubscription> subscriptions;
 
+  private int successes = -1;
+  private int downgrades = -1;
+
   public MqttSubscribePromise(EventExecutor executor, long timeout, TimeUnit unit,
       MqttSubscription... subscriptions) {
     super(executor, timeout, unit);
@@ -52,37 +55,32 @@ public class MqttSubscribePromise extends MqttPromise<MqttQoS[]> implements Mqtt
   }
 
   @Override
-  public boolean hasAllResults() {
-    return isSuccess() && subscriptions().size() == getNow().length;
+  public boolean isAllSuccess() {
+    if (successes < 0 && isDone()) {
+      successes = downgrades = 0;
+      if (isSuccess()) {
+        final List<MqttSubscription> requests = subscriptions();
+        final MqttQoS[] results = getNow();
+        final int size = Math.min(requests.size(), results.length);
+        for (int index = 0; index < size; index++) {
+          MqttQoS granted = results[index];
+          if (granted == MqttQoS.FAILURE) {
+            continue;
+          }
+          MqttQoS request = requests.get(index).qos();
+          if (granted.compareTo(request) < 0) {
+            downgrades++;
+          }
+          successes++;
+        }
+      }
+    }
+    return successes == subscriptions().size();
   }
 
   @Override
-  public boolean hasDowngraded() {
-    if (!hasAllResults()) {
-      return true;
-    }
-    final List<MqttSubscription> request = subscriptions();
-    final int size = request.size();
-    final MqttQoS[] results = getNow();
-    for (int index = 0; index < size; index++) {
-      if ((byte) request.get(index).qos().value() > (byte) results[index].value()) {
-        return true;
-      }
-    }
-    return false;
-  }
-
-  @Override
-  public boolean hasFailed() {
-    if (!hasAllResults()) {
-      return true;
-    }
-    for (MqttQoS qos : getNow()) {
-      if (qos == MqttQoS.FAILURE) {
-        return true;
-      }
-    }
-    return false;
+  public boolean isCompleteSuccess() {
+    return isAllSuccess() && downgrades == 0;
   }
 
   @Override

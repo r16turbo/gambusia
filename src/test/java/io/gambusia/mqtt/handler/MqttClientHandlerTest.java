@@ -380,63 +380,61 @@ class MqttClientHandlerTest {
     }
 
     @Test
-    void hasNotAllResults() {
+    void completeSuccess() {
       MqttSubscribeFuture future = client.subscribe(
           MqttSubscription.qos2("test/+/2"),
           MqttSubscription.qos1("test/+/1"),
           MqttSubscription.qos0("test/+/0"));
-      assertFalse(future.hasAllResults());
-      ch.writeInbound(new MqttSubAckMessage(SUBACK_HEADER,
-          MqttMessageIdVariableHeader.from(1),
-          new MqttSubAckPayload()));
-      assertFalse(future.hasAllResults());
-      assertTrue(future.hasDowngraded());
-      assertTrue(future.hasFailed());
-    }
-
-    @Test
-    void hasNotDowngrade() {
-      MqttSubscribeFuture future = client.subscribe(
-          MqttSubscription.qos2("test/+/2"),
-          MqttSubscription.qos1("test/+/1"),
-          MqttSubscription.qos0("test/+/0"));
-      assertFalse(future.hasAllResults());
+      assertFalse(future.isAllSuccess());
+      assertFalse(future.isCompleteSuccess());
       ch.writeInbound(new MqttSubAckMessage(SUBACK_HEADER,
           MqttMessageIdVariableHeader.from(1),
           new MqttSubAckPayload(0x02, 0x01, 0x00)));
-      assertTrue(future.hasAllResults());
-      assertFalse(future.hasDowngraded());
-      assertFalse(future.hasFailed());
+      assertTrue(future.isAllSuccess());
+      assertTrue(future.isCompleteSuccess());
     }
 
     @Test
-    void hasDowngrade() {
+    void downgradedSuccess() {
       MqttSubscribeFuture future = client.subscribe(
           MqttSubscription.qos2("test/+/2"),
           MqttSubscription.qos1("test/+/1"),
           MqttSubscription.qos0("test/+/0"));
-      assertFalse(future.hasAllResults());
+      assertFalse(future.isAllSuccess());
+      assertFalse(future.isCompleteSuccess());
       ch.writeInbound(new MqttSubAckMessage(SUBACK_HEADER,
           MqttMessageIdVariableHeader.from(1),
           new MqttSubAckPayload(0x02, 0x00, 0x00)));
-      assertTrue(future.hasAllResults());
-      assertTrue(future.hasDowngraded());
-      assertFalse(future.hasFailed());
+      assertTrue(future.isAllSuccess());
+      assertFalse(future.isCompleteSuccess());
     }
 
     @Test
-    void hasFailure() {
+    void failure() {
       MqttSubscribeFuture future = client.subscribe(
           MqttSubscription.qos2("test/+/2"),
           MqttSubscription.qos1("test/+/1"),
           MqttSubscription.qos0("test/+/0"));
-      assertFalse(future.hasAllResults());
+      assertFalse(future.isAllSuccess());
+      assertFalse(future.isCompleteSuccess());
       ch.writeInbound(new MqttSubAckMessage(SUBACK_HEADER,
           MqttMessageIdVariableHeader.from(1),
           new MqttSubAckPayload(0x02, 0x80, 0x00)));
-      assertTrue(future.hasAllResults());
-      assertTrue(future.hasDowngraded());
-      assertTrue(future.hasFailed());
+      assertFalse(future.isAllSuccess());
+      assertFalse(future.isCompleteSuccess());
+    }
+
+    @Test
+    void cancel() throws InterruptedException {
+      MqttSubscribeFuture future = client.subscribe(
+          MqttSubscription.qos2("test/+/2"),
+          MqttSubscription.qos1("test/+/1"),
+          MqttSubscription.qos0("test/+/0"));
+      assertFalse(future.isAllSuccess());
+      assertFalse(future.isCompleteSuccess());
+      future.cancel(false);
+      assertFalse(future.isAllSuccess());
+      assertFalse(future.isCompleteSuccess());
     }
   }
 
