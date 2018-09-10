@@ -411,17 +411,53 @@ class MqttClientHandlerTest {
 
     @Test
     void failure() {
-      MqttSubscribeFuture future = client.subscribe(
-          MqttSubscription.qos2("test/+/2"),
-          MqttSubscription.qos1("test/+/1"),
-          MqttSubscription.qos0("test/+/0"));
-      assertFalse(future.isAllSuccess());
-      assertFalse(future.isCompleteSuccess());
-      ch.writeInbound(new MqttSubAckMessage(SUBACK_HEADER,
-          MqttMessageIdVariableHeader.from(1),
-          new MqttSubAckPayload(0x02, 0x80, 0x00)));
-      assertFalse(future.isAllSuccess());
-      assertFalse(future.isCompleteSuccess());
+      assertThatCode(() -> {
+        MqttSubscribeFuture future = client.subscribe(
+            MqttSubscription.qos2("test/+/2"),
+            MqttSubscription.qos1("test/+/1"),
+            MqttSubscription.qos0("test/+/0"));
+        assertFalse(future.isAllSuccess());
+        assertFalse(future.isCompleteSuccess());
+        ch.writeInbound(new MqttSubAckMessage(SUBACK_HEADER,
+            MqttMessageIdVariableHeader.from(1),
+            new MqttSubAckPayload(0x02, 0x80, 0x00)));
+        assertFalse(future.isAllSuccess());
+        assertFalse(future.isCompleteSuccess());
+      }).doesNotThrowAnyException();
+
+      assertThatExceptionOfType(MqttSubscribeException.class).isThrownBy(() -> {
+        MqttSubscribeFuture future = client.subscribe(
+            MqttSubscription.qos2("test/+/2"),
+            MqttSubscription.qos1("test/+/1"),
+            MqttSubscription.qos0("test/+/0"));
+        assertFalse(future.isAllSuccess());
+        assertFalse(future.isCompleteSuccess());
+        ch.writeInbound(new MqttSubAckMessage(SUBACK_HEADER,
+            MqttMessageIdVariableHeader.from(2),
+            new MqttSubAckPayload(0x02, 0x01)));
+        assertTrue(future.sync().isSuccess());
+      }).withNoCause().matches(e -> e.returnCodeLength() == 2)
+          .matches(e -> e.returnCode(0) == MqttQoS.EXACTLY_ONCE)
+          .matches(e -> e.returnCode(1) == MqttQoS.AT_LEAST_ONCE)
+          .withMessage("Number of return codes do not match: 2 (expected: 3)");
+
+      assertThatExceptionOfType(MqttSubscribeException.class).isThrownBy(() -> {
+        MqttSubscribeFuture future = client.subscribe(
+            MqttSubscription.qos2("test/+/2"),
+            MqttSubscription.qos1("test/+/1"),
+            MqttSubscription.qos0("test/+/0"));
+        assertFalse(future.isAllSuccess());
+        assertFalse(future.isCompleteSuccess());
+        ch.writeInbound(new MqttSubAckMessage(SUBACK_HEADER,
+            MqttMessageIdVariableHeader.from(3),
+            new MqttSubAckPayload(0x02, 0x01, 0x00, 0x80)));
+        assertTrue(future.sync().isSuccess());
+      }).withNoCause().matches(e -> e.returnCodeLength() == 4)
+          .matches(e -> e.returnCode(0) == MqttQoS.EXACTLY_ONCE)
+          .matches(e -> e.returnCode(1) == MqttQoS.AT_LEAST_ONCE)
+          .matches(e -> e.returnCode(2) == MqttQoS.AT_MOST_ONCE)
+          .matches(e -> e.returnCode(3) == MqttQoS.FAILURE)
+          .withMessage("Number of return codes do not match: 4 (expected: 3)");
     }
 
     @Test

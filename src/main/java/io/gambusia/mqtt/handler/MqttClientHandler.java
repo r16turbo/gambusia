@@ -113,7 +113,7 @@ public class MqttClientHandler extends ChannelDuplexHandler {
   private final ConcurrentMap<Hash, MqttPublishPromise> publishPromises;
   private final ConcurrentMap<Hash, Promise<Void>> releasePromises;
   private final ConcurrentMap<Hash, Promise<Void>> receivePromises;
-  private final ConcurrentMap<Hash, Promise<MqttQoS[]>> subscribePromises;
+  private final ConcurrentMap<Hash, MqttSubscribePromise> subscribePromises;
   private final ConcurrentMap<Hash, Promise<Void>> unsubscribePromises;
   private final Queue<Promise<Void>> pingPromises;
 
@@ -368,7 +368,7 @@ public class MqttClientHandler extends ChannelDuplexHandler {
       if (null != subscribePromises.putIfAbsent(hash.set(packetId), msg)) {
         msg.setFailure(new MqttDuplicatePacketException(MqttMessageType.SUBSCRIBE, packetId));
       } else {
-        final Promise<MqttQoS[]> promise = setTimer(msg);
+        final MqttSubscribePromise promise = setTimer(msg);
         final MqttSubscribeMessage message;
         promise.addListener(new PromiseRemover<>(subscribePromises, packetId, promise));
         // channel(cancel, failure) -> promise
@@ -580,17 +580,24 @@ public class MqttClientHandler extends ChannelDuplexHandler {
       unexpectedPacketHandler.subAck(ctx, packetId, new NotYetConnectedException());
     } else {
       final MqttSubAckPayload payload = msg.payload();
-      final Promise<MqttQoS[]> promise = subscribePromises.remove(hash.set(packetId));
+      final MqttSubscribePromise promise = subscribePromises.remove(hash.set(packetId));
       if (promise == null) {
         unexpectedPacketHandler.subAck(ctx, packetId, new NoSuchElementException("No promise"));
       } else {
         final List<Integer> results = payload.grantedQoSLevels();
-        final int size = results.size();
-        final MqttQoS[] qosLevels = new MqttQoS[size];
-        for (int index = 0; index < size; index++) {
-          qosLevels[index] = MqttQoS.valueOf(results.get(index).intValue());
+        final int actual = results.size();
+        final int expected = promise.subscriptions().size();
+        final MqttQoS[] returnCodes = new MqttQoS[actual];
+        for (int index = 0; index < actual; index++) {
+          returnCodes[index] = MqttQoS.valueOf(results.get(index).intValue());
         }
-        promise.trySuccess(qosLevels);
+        if (actual != expected) {
+          promise.tryFailure(new MqttSubscribeException(
+              "Number of return codes do not match: " + actual + " (expected: " + expected + ")",
+              returnCodes));
+        } else {
+          promise.trySuccess(returnCodes);
+        }
       }
     }
   }
