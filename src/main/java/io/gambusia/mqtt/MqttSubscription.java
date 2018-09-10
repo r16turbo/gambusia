@@ -17,6 +17,7 @@
 package io.gambusia.mqtt;
 
 import static io.gambusia.netty.util.Args.requireNonEmpty;
+import static io.gambusia.netty.util.Args.requireNonNull;
 
 import io.netty.handler.codec.mqtt.MqttQoS;
 
@@ -26,7 +27,7 @@ public class MqttSubscription {
   private final String topicFilter;
 
   public MqttSubscription(MqttQoS qos, String topicFilter) {
-    this.qos = qos;
+    this.qos = requireNonNull(qos, "qos");
     this.topicFilter = requireNonEmpty(topicFilter, "topicFilter");
   }
 
