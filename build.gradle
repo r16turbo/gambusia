@@ -31,7 +31,7 @@ ext {
 }
 
 group = 'io.gambusia'
-version = '0.21.1-SNAPSHOT'
+version = '0.22.0'
 description = 'Netty-based MQTT v3.1.1 lightweight client'
 
 eclipse.classpath.file.whenMerged {
