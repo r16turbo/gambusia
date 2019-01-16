@@ -34,23 +34,27 @@ version = '0.21.1-SNAPSHOT'
 description = 'Netty-based MQTT v3.1.1 lightweight client'
 
 dependencies {
-    api("io.netty:netty-codec-mqtt:${nettyVersion}")
+    implementation platform("io.netty:netty-bom:${nettyVersion}")
+    api('io.netty:netty-codec-mqtt')
 
-    testImplementation("org.apache.logging.log4j:log4j-api:${log4jVersion}")
-    testImplementation("io.netty:netty-handler:${nettyVersion}")
-    testImplementation("org.junit.jupiter:junit-jupiter-api:${junitVersion}")
+    testImplementation platform("org.apache.logging.log4j:log4j-bom:${log4jVersion}")
+    testImplementation platform("org.junit:junit-bom:${junitVersion}")
+    testImplementation('org.apache.logging.log4j:log4j-api')
+    testImplementation('io.netty:netty-handler')
+    testImplementation('org.junit.jupiter:junit-jupiter-api')
     testImplementation("org.assertj:assertj-core:${assertjVersion}")
-    testRuntimeOnly("org.apache.logging.log4j:log4j-core:${log4jVersion}")
-    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:${junitVersion}")
+    testRuntimeOnly('org.apache.logging.log4j:log4j-core')
+    testRuntimeOnly('org.junit.jupiter:junit-jupiter-engine')
 }
 
 repositories {
     jcenter()
 }
 
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+
 tasks.withType(JavaCompile) {
-    sourceCompatibility = 1.8
-    targetCompatibility = 1.8
     options.encoding = 'UTF-8'
 }
 
@@ -69,6 +73,7 @@ jar {
         license 'http://www.apache.org/licenses/LICENSE-2.0.txt'
     }
 }
+
 
 task sourcesJar(type: Jar, dependsOn: classes) {
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
