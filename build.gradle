@@ -18,7 +18,7 @@ plugins {
     id 'eclipse'
     id 'java-library'
     id 'maven-publish'
-    id 'osgi'
+    id 'biz.aQute.bnd.builder' version '4.1.0'
 }
 
 ext {
@@ -73,15 +73,25 @@ test {
 }
 
 jar {
-    manifest {
-        instruction 'Implementation-Title', title
-        instruction 'Implementation-Version', version
-        instruction 'Automatic-Module-Name', 'io.gambusia.mqtt'
+    bnd (
+        'Implementation-Title': title,
+        'Implementation-Version': version,
+        'Automatic-Module-Name': 'io.gambusia.mqtt',
 
-        description project.description
-        docURL 'https://github.com/r16turbo/gambusia'
-        license 'http://www.apache.org/licenses/LICENSE-2.0.txt'
-    }
+        'Bundle-Name': title,
+        'Bundle-SymbolicName': project.group,
+        'Bundle-Description': project.description,
+        'Bundle-DocURL': 'https://github.com/r16turbo/gambusia',
+        'Bundle-License': 'http://www.apache.org/licenses/LICENSE-2.0.txt',
+
+        'Export-Package': [
+            'io.gambusia.mqtt',
+            'io.gambusia.mqtt.handler',
+            'io.gambusia.mqtt.handler.promise',
+            'io.gambusia.netty.util',
+            'io.gambusia.netty.util.concurrent',
+        ].join(','),
+    )
 }
 
 
