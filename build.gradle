@@ -15,6 +15,7 @@
  */
 
 plugins {
+    id 'eclipse'
     id 'java-library'
     id 'maven-publish'
     id 'osgi'
@@ -32,6 +33,15 @@ ext {
 group = 'io.gambusia'
 version = '0.21.1-SNAPSHOT'
 description = 'Netty-based MQTT v3.1.1 lightweight client'
+
+eclipse.classpath.file.whenMerged {
+    entries.each {
+        if (it in org.gradle.plugins.ide.eclipse.model.AbstractClasspathEntry
+            && it.entryAttributes['gradle_used_by_scope'] == 'test') {
+            it.entryAttributes['test'] = 'true'
+        }
+    }
+}
 
 dependencies {
     implementation platform("io.netty:netty-bom:${nettyVersion}")
