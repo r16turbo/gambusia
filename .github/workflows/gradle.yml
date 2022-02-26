@@ -24,7 +24,7 @@ jobs:
 
     services:
       mosquitto:
-        image: eclipse-mosquitto
+        image: eclipse-mosquitto:1.6
         ports:
         - 1883:1883
 
