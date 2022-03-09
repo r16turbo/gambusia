@@ -45,12 +45,14 @@ jobs:
         arguments: check
 
     - name: Archive test report
+      if: always()
       uses: actions/upload-artifact@v3
       with:
         name: test-report
         path: build/reports/tests/test
 
     - name: Archive coverage report
+      if: always()
       uses: actions/upload-artifact@v3
       with:
         name: coverage-report
