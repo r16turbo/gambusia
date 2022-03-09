@@ -19,6 +19,7 @@ plugins {
     id 'java-library'
     id 'maven-publish'
     id 'biz.aQute.bnd.builder' version '4.1.0'
+    id 'jacoco'
 }
 
 ext {
@@ -70,6 +71,14 @@ tasks.withType(JavaCompile) {
 
 test {
     useJUnitPlatform()
+    finalizedBy jacocoTestReport
+}
+
+jacocoTestReport {
+    dependsOn test
+    reports {
+        html.enabled = true
+    }
 }
 
 jar {
