@@ -44,6 +44,18 @@ jobs:
       with:
         arguments: check
 
+    - name: Archive test report
+      uses: actions/upload-artifact@v3
+      with:
+        name: test-report
+        path: build/reports/tests/test
+
+    - name: Archive coverage report
+      uses: actions/upload-artifact@v3
+      with:
+        name: coverage-report
+        path: build/reports/jacoco/test/html
+
 #    # The USERNAME and TOKEN need to correspond to the credentials environment variables used in
 #    # the publishing section of your build.gradle
 #    - name: Publish to GitHub Packages
