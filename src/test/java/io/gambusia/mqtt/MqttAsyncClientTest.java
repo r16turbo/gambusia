@@ -191,7 +191,7 @@ class MqttAsyncClientTest {
       assertTrue(client.connect(true, 2, 2, "test").sync().isSuccess());
       TimeUnit.MILLISECONDS.sleep(500);
       assertTrue(client.ping().sync().isSuccess());
-      TimeUnit.MILLISECONDS.sleep(3500);
+      TimeUnit.MILLISECONDS.sleep(4000);
       assertTrue(client.channel().isActive());
     }
 
@@ -200,7 +200,7 @@ class MqttAsyncClientTest {
       assertTrue(client.connect(true, 2, 0, "test").sync().isSuccess());
       TimeUnit.MILLISECONDS.sleep(500);
       assertTrue(client.ping().sync().isSuccess());
-      TimeUnit.MILLISECONDS.sleep(3500);
+      TimeUnit.MILLISECONDS.sleep(4000);
       assertFalse(client.channel().isActive());
     }
   }
